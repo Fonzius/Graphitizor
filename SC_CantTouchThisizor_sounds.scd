@@ -1,3 +1,8 @@
+
+
+
+//////////////////////////////////////// DRUMS //////////////////////////////////////////////////
+
 (
 SynthDef(\kick, {
     |out = 0, pan = 0, amp = 0.3|
@@ -102,8 +107,8 @@ base = Pbind(\amp, 0.3);
 
 Ppar([
     Pbindf(
-        base,
-        \instrument, Pseq([\kick, \snare, \kick, \kick, \snare], inf),
+        Pbind(\amp, 0.3),
+        \instrument, Pseq([\kick, \snare, \snare, \clap, \kick], inf),
         \dur, Pseq([4, 3, 3, 2, 4], inf)
     ),
     Pbindf(
@@ -134,22 +139,22 @@ Ppar([
 			doneAction: 2
 		);
 	) ! 2;
-}.asSynthDef.name_("kick").add;
+}.asSynthDef.name_("kick2").add;
 
 { | atk = 0.01, dur = 0.15, freq = 50, amp=0.8 |
 	BPF.ar(LFSaw.ar(freq), freq, 2, mul: EnvGen.kr( Env.perc( atk, dur-atk, amp, 6 ), doneAction: 2 )) ! 2;
-}.asSynthDef.name_("bass").add;
+}.asSynthDef.name_("bass2").add;
 
 { | dur = 0.15, freq = 50, amp = 0.8, index = 10 |
 	PMOsc.ar(freq, freq + 5, index, mul: amp * EnvGen.kr( Env.triangle( dur ), doneAction: 2 )) ! 2;
-}.asSynthDef.name_("bazz").add;
+}.asSynthDef.name_("bazz2").add;
 )
 
 
 (
 Ppar([
-	/*Pbind(*[
-		instrument: \kick,
+	Pbind(*[
+		instrument: \kick2,
 		delta: 1,
 		dur: Pfunc({ thisThread.clock.beatDur }) / 4,
 		amp: Pseq([
@@ -163,16 +168,16 @@ Ppar([
 			`[1260,60,110],
 			`[4360,60,120]
 		],inf))
-	]),*/
+	]),
 	Pbind(*[
-		instrument: \bass,
+		instrument: \bass2,
 		delta: 1/4,
 		dur: Pkey(\delta) * Pfunc({ thisThread.clock.beatDur }),
 		freq: Pseq([70, 50,60,70], inf),
 		amp:0.6
 	]),
 	Pbind(*[
-		instrument: \bazz,
+		instrument: \bazz2,
 		delta: 1/4,
 		dur: Pkey(\delta) * Pfunc({ thisThread.clock.beatDur }),
 		freq: Pseq([100,50,60,40], inf),
@@ -184,10 +189,50 @@ Ppar([
 // kick from above?
 (
 Pbind(*[
-	instrument: \kick,
+	instrument: \kick2,
 	delta: Pseq(Array.geom(540, 1, 1.015).reciprocal.reverse),
 	dur: Pkey(\delta) * Pfunc({ thisThread.clock.beatDur }),
 	atk: Pkey(\dur) / 6,
         amp: 0.8
 ]).play;
+)
+
+
+
+
+//////////////////////////////////////// BASS //////////////////////////////////////////////////
+
+
+(
+SynthDef("bass", { arg freq = 440, amp = 0.5, gate = 1;
+	var snd, env, oscfreq, output;
+	oscfreq = {freq * LFNoise2.kr(0.5).range(0.98, 1.02)}!3;
+	snd = Splay.ar(LFSaw.ar(oscfreq, mul: amp));
+	env = Env.adsr(0.7, 4, 0, 0.1).kr(doneAction:2, gate: gate);
+	snd = snd;
+	output = LPF.ar(snd, (env*freq) + 2*freq);
+	Out.ar(0, output);
+	}).add;
+)
+
+(
+Pbind(
+	\instrument, "bass",
+	\tempo, 10,
+	\ctranspose, -24,
+	\midinote, Pseq([Pseq([60, 64, 67, 71, 55, 58, 59], 2), Pseq([67, 62, 59, 65], 1), Pseq([60, 64, 67, 71, 55, 58, 59], 1), Pseq([[60,48]],1)],inf),
+	\dur, Pseq([Pseq([8, 4, 4, 8, 4, 2, 2], 2), Pseq([8, 4, 2, 18], 1), Pseq([8, 4, 4, 8, 4, 2, 2], 1), Pseq([32],1)], inf),
+	\legato, 1,
+	\amp, 0.6,
+).play;
+
+Ppar([
+    Pbindf(
+        Pbind(\amp, 0.9),
+		\tempo, 10,
+        \instrument, Pseq([\kick, \snare, \clap, \clap, \clap, \kick, \snare], inf),
+        \dur, Pseq([4, 3, 1, 1, 1, 2, 4], inf)
+    ),
+]).play;
+)
 )
