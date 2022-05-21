@@ -5,62 +5,6 @@ SerialPort.devices;
 ~port = SerialPort.new("COM3", 115200);
 
 (
-~charArray = [0];
-~flag = 0;
-~oldVal1 = 0;
-~getValues = Routine.new(
-	{ var ascii;
-		{ ascii = ~port.read.asAscii;
-			ascii.postln;
-			/*if(ascii == $z,{
-				// ascii.postln;
-				~flag = 0;
-				~val0 = ~val1;
-			});*/
-			if(ascii.isDecDigit,{
-				~charArray.add(ascii.digit)});
-			//~charArray.postln;
-			if(ascii == $a,{
-				~val1= ~charArray.convertDigits;
-				// ~val1.postln;
-				// ascii.postln;
-				~charArray = [0];
-			});
-			if(ascii == $b,{
-				~val2 = ~charArray.convertDigits;
-				// ~val2.postln;
-				// ascii.postln;
-				~charArray = [0];
-
-			});
-			if(ascii == $c,{
-				~val3 = ~charArray.convertDigits;
-				// ~val3.postln;
-				// ascii.postln;
-				~charArray = [0];
-				if (((~flag==0) && (~val1 > 143) && (~val1 < 160)),{
-					switch(~val1,
-						144, {a = Synth.new(\kick)},
-						145, {b = Synth.new(\snare)},
-						146, {c = Synth.new(\clap)},
-						147, {d = Synth.new(\hihat)}
-					);
-					~flag = 1;
-				},{
-					if(((~val1 > 127) && (~val1 < 144)), {
-						~flag = 0;
-					});
-				});
-
-			});
-
-	}.loop;}
-).play;
-)
-
-~getValues.stop;
-
-(
 
 //////////////////////////////////////// SYNTHDEFS Block /////////////////////////////////////////
 
@@ -161,6 +105,67 @@ SynthDef(\clap, {
     Out.ar(out, Pan2.ar(snd,pan,amp));
 }).add;
 )
+
+
+(
+
+/////////////////////////////////////////////// ROUTINE ////////////////////////////////////////////////
+
+~charArray = [0];
+~flag = 0;
+~oldVal1 = 0;
+~getValues = Routine.new(
+	{ var ascii;
+		{ ascii = ~port.read.asAscii;
+			ascii.postln;
+			/*if(ascii == $z,{
+				// ascii.postln;
+				~flag = 0;
+				~val0 = ~val1;
+			});*/
+			if(ascii.isDecDigit,{
+				~charArray.add(ascii.digit)});
+			//~charArray.postln;
+			if(ascii == $a,{
+				~val1= ~charArray.convertDigits;
+				// ~val1.postln;
+				// ascii.postln;
+				~charArray = [0];
+			});
+			if(ascii == $b,{
+				~val2 = ~charArray.convertDigits;
+				// ~val2.postln;
+				// ascii.postln;
+				~charArray = [0];
+
+			});
+			if(ascii == $c,{
+				~val3 = ~charArray.convertDigits;
+				// ~val3.postln;
+				// ascii.postln;
+				~charArray = [0];
+				if (((~flag==0) && (~val1 > 143) && (~val1 < 160)),{
+					switch(~val1,
+						144, {a = Synth.new(\kick)},
+						145, {b = Synth.new(\snare)},
+						146, {c = Synth.new(\clap)},
+						147, {d = Synth.new(\hihat)}
+					);
+					~flag = 1;
+				},{
+					if(((~val1 > 127) && (~val1 < 144)), {
+						~flag = 0;
+					});
+				});
+
+			});
+
+	}.loop;}
+).play;
+)
+
+~getValues.stop;
+
 
 Synth(\kick);
 Synth(\snare);
