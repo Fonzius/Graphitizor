@@ -3,6 +3,8 @@
 #define CLAP_PIN 7 // +2
 #define HIHAT_PIN 8 // +3
 
+#define SYNTH_PITCH_PIN A0 //+4
+
 #define MIDI_NOTE_ON  (0x90)
 #define MIDI_NOTE_OFF   (0x80)
 
@@ -12,19 +14,25 @@ bool oldReadKick = false;
 bool oldReadSnare = false;
 bool oldReadClap = false;
 bool oldReadHiHat = false;
+bool synthFlag = false;
 
 bool newReadKick = false;
 bool newReadSnare = false;
 bool newReadClap = false;
 bool newReadHiHat = false;
+//bool newReadSynthFlag = false;
+
+int newReadSynth = 0;
+int oldReadSynth = 0;
 
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
-  pinMode(5,INPUT);
-  pinMode(6,INPUT);
-  pinMode(7,INPUT);
-  pinMode(8,INPUT);
+  pinMode(KICK_PIN,INPUT);
+  pinMode(SNARE_PIN,INPUT);
+  pinMode(CLAP_PIN,INPUT);
+  pinMode(HIHAT_PIN,INPUT);
+  pinMode(SYNTH_PITCH_PIN,INPUT);
 }
 
 void loop() {
@@ -62,7 +70,25 @@ void loop() {
   oldReadSnare = newReadSnare;
   oldReadClap = newReadClap;
   oldReadHiHat = newReadHiHat;
- 
+
+  //ANALOG INPUT
+  newReadSynth = analogRead(SYNTH_PITCH_PIN);
+  //Serial.println(newReadSynth);
+  //delay(500);
+  newReadSynth = (int)newReadSynth/4; // from 0-1023 to 0-255
+  
+  if(newReadSynth > 10){
+    if(abs(newReadSynth - oldReadSynth) > 4){
+      midiMsg(MIDI_NOTE_ON +4, newReadSynth, 0x7F);
+      synthFlag = false;
+      oldReadSynth = newReadSynth;
+    }
+  } else if (!synthFlag) {
+    midiMsg(MIDI_NOTE_OFF + 4, newReadSynth, 0x7F);
+    synthFlag = true;
+  }
+    
+    
   delay(1);
 }
 
