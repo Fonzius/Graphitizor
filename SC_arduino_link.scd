@@ -1,4 +1,5 @@
 s.reboot;
+
 s.latency=0;
 
 SerialPort.devices;
@@ -104,11 +105,25 @@ SynthDef(\clap, {
 
     Out.ar(out, Pan2.ar(snd,pan,amp));
 }).add;
+
+
+SynthDef("bass", { arg freq = 440, amp = 0.8, gate = 1;
+	var snd, env, oscfreq, output;
+	oscfreq = {freq * LFNoise2.kr(0.8).range(0.98, 1.02)}!3;
+	snd = Splay.ar(LFSaw.ar(oscfreq, mul: amp));
+	snd = snd + Pulse.ar(freq, mul:amp);
+	snd = LPF.ar(snd, 3*freq);
+	Out.ar(0, snd);
+	}).add;
+
+{
+~bass = Synth.newPaused(\bass, [\freq, 36.midicps]);
+}.defer(1);
 )
 
 
-(
 
+(
 /////////////////////////////////////////////// ROUTINE ////////////////////////////////////////////////
 
 ~charArray = [0];
@@ -117,7 +132,7 @@ SynthDef(\clap, {
 ~getValues = Routine.new(
 	{ var ascii;
 		{ ascii = ~port.read.asAscii;
-			ascii.postln;
+			//ascii.postln;
 			/*if(ascii == $z,{
 				// ascii.postln;
 				~flag = 0;
@@ -128,36 +143,52 @@ SynthDef(\clap, {
 			//~charArray.postln;
 			if(ascii == $a,{
 				~val1= ~charArray.convertDigits;
-				// ~val1.postln;
-				// ascii.postln;
+				~val1.postln;
+				ascii.postln;
 				~charArray = [0];
 			});
 			if(ascii == $b,{
 				~val2 = ~charArray.convertDigits;
-				// ~val2.postln;
-				// ascii.postln;
+				~val2.postln;
+				ascii.postln;
 				~charArray = [0];
 
 			});
 			if(ascii == $c,{
 				~val3 = ~charArray.convertDigits;
-				// ~val3.postln;
-				// ascii.postln;
+				~val3.postln;
+				ascii.postln;
 				~charArray = [0];
-				if (((~flag==0) && (~val1 > 143) && (~val1 < 160)),{
-					switch(~val1,
-						144, {a = Synth.new(\kick)},
-						145, {b = Synth.new(\snare)},
-						146, {c = Synth.new(\clap)},
-						147, {d = Synth.new(\hihat)}
-					);
-					~flag = 1;
+				if (((~val1 > 143) && (~val1 < 160)),{
+					if((~flag==0), {
+						switch(~val1,
+							144, {a = Synth.new(\kick)},
+							145, {b = Synth.new(\snare)},
+							146, {c = Synth.new(\clap)},
+							147, {d = Synth.new(\hihat)},
+							148, {
+								~bass.set(\freq, (65.41 + (~val2/3.8)));
+								~bass.run(true);
+							}
+						);
+						~flag = 1;
+					}, {
+						switch(~val1,
+							148, {
+								~bass.set(\freq, (36 + (~val2 * 0.047)).midicps);
+							}
+						)
+					})
 				},{
 					if(((~val1 > 127) && (~val1 < 144)), {
+						switch(~val1,
+							132, {~bass.run(false)}
+						);
 						~flag = 0;
 					});
 				});
-
+				(' ').postln;
+				(' ').postln;
 			});
 
 	}.loop;}
@@ -171,7 +202,9 @@ Synth(\kick);
 Synth(\snare);
 Synth(\hihat);
 Synth(\clap);
-
+~bass.run(true);
+~bass.run(false);
+~bass.set(\freq, 46.midicps);
 
 
 // (

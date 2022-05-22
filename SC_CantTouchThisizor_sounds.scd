@@ -217,6 +217,30 @@ SynthDef("bass", { arg freq = 440, amp = 0.5, gate = 1;
 
 
 
+(
+
+{
+
+Mix(
+
+	Resonz.ar(			//The Resonz filter has arguments input, freq, rq=bandwidth/centre frequency
+
+		Saw.ar([440,443,437] + SinOsc.ar(100,0,100)), //frequency modulated sawtooth wave with chorusing
+
+		XLine.kr(10000,5000,10), //vary filter bandwidth over time
+
+		Line.kr(1,0.9, 10), //vary filter rq over time
+
+
+
+	)
+
+)
+
+}.scope
+
+)
+
 
 
 
