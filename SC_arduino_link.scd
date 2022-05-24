@@ -118,12 +118,11 @@ SynthDef(\bass, { arg freq = 440, amp = 0.5, gate = 1;
 }).add;
 
 
-SynthDef(\pluck, {arg outbus=0, freq=440, filter=3, amp=1,coef=0.5,dur=2,legato=1,mix=0,pan=0, delt = 0, dect=0, gate = 1, mixrev =1, room = 0.8;
+SynthDef(\pluck, {arg outbus=0, freq=440, filter=3, amp=1,coef=0.5,dur=2,legato=1,mix=0,pan=0, gate = 1, mixrev=0, room = 0.8;
 	var pluck,moog,noteOff,out;
 	pluck =	Pluck.ar(PinkNoise.ar,1,0.2,freq.reciprocal,dur*legato,coef);
 	moog = MoogFF.ar(pluck, (freq*filter),2);
 	out = SelectX.ar(mix,[LPF.ar(pluck,2500),moog]);
-	out = out + AllpassC.ar(out, 1, delt, dect);
 	out = FreeVerb.ar(out, mixrev, room);
 	out = out * EnvGen.ar(Env.asr(0, 1, 0.1), gate, doneAction: 2);
 	Out.ar(outbus, Pan2.ar(out * amp,pan));
@@ -142,12 +141,17 @@ e.add(Scale.minor.degrees);
 
 ~array = Array.new(15);
 ~array.add(-1);
-
+~volumePluck = 0;
+~volumeBass = 0;
+~reverb = 0;
 
 Pdefn(\noteseq, Pseq(~array, inf));
-Pdefn(\harpVolume, ~volume1);
-Pdef(\plucked, Pbind(\tempo, 40,\instrument, \pluck, \note, Pdefn(\noteseq), \dur, 12, \amp, Pdefn(\harpVolume), \delt, 0.3, \dect, 0.6, \mixrev, Pdefn(\reverb)));
-Pdef(\sawBass, Pbind(\tempo, 40,\instrument, \bass, \note, Pdefn(\noteseq), \dur, 24, \ctranspose, -24, \amp, Pdefn(\harpVolume)));
+Pdefn(\harpVolumePluck, ~volumePluck);
+Pdefn(\harpVolumeBass, ~volumeBass);
+Pdefn(\reverb, ~reverb);
+
+Pdef(\plucked, Pbind(\tempo, 40,\instrument, \pluck, \note, Pdefn(\noteseq), \dur, 12, \amp, Pdefn(\harpVolumePluck), \delt, 0.3, \dect, 0.6, \mixrev, Pdefn(\reverb)));
+Pdef(\sawBass, Pbind(\tempo, 40,\instrument, \bass, \note, Pdefn(\noteseq), \dur, 24, \ctranspose, -24, \amp, Pdefn(\harpVolumeBass)));
 
 )
 
@@ -183,53 +187,58 @@ Pdef(\sawBass, Pbind(\tempo, 40,\instrument, \bass, \note, Pdefn(\noteseq), \dur
 				ascii.postln;
 				~charArray = [0];
 				if (((~val1 > 143) && (~val1 < 160)),{
-					if((~flag==0), {
-						switch(~val1,
-							144, {a = Synth.new(\kick)},
-							145, {b = Synth.new(\snare)},
-							146, {c = Synth.new(\clap)},
-							147, {d = Synth.new(\hihat)},
-							148, {
-								if ((~array[0] == -1),{
-									~array.removeAt(0);
-									~array.add(e[0][~val1%148]);
-									Pdefn(\noteseq, Pseq(~array, inf));
-									Pdef(\plucked).play;
-									Pdef(\sawBass).play;
-								},{
-									~array.add(e[0][~val1%148]);
-									Pdef(\plucked).resume;
-									Pdef(\sawBass).resume;
-								});
-							},
-							149, {
-								~volume1 = ~val2/255;
-								Pdefn(\harpVolume, ~volume1);
-						});
-						~flag = 1;
+					switch(~val1,
+						144, {a = Synth.new(\kick)},
+						145, {b = Synth.new(\snare)},
+						146, {c = Synth.new(\clap)},
+						147, {d = Synth.new(\hihat)},
+						148, {
+							if ((~array[0] == -1),{
+								~array.removeAt(0);
+								~array.add(e[0][~val1%148]);
+								Pdefn(\noteseq, Pseq(~array, inf));
+								Pdef(\plucked).play;
+								Pdef(\sawBass).play;
+							},{
+								~array.add(e[0][~val1%148]);
+								Pdef(\plucked).resume;
+								Pdef(\sawBass).resume;
+							});
+						},
+						149, {
+							~volumePluck = ~val2/255;
+							~volumeBass = ~val2/700;
+							Pdefn(\harpVolumePluck, ~volumePluck);
+							Pdefn(\harpVolumeBass, ~volumeBass);
+							~volumePluck.postln;  //DEBUG
+							~volumeBass.postln;  //DEBUG
 					});
 				},{
 					if (((~val1 > 127) && (~val1 < 144)), {
 						switch(~val1,
 							132, {
-								Pdef(\plucked).pause;
-								Pdef(\sawBass).pause;
 								for(0, 6, {
 									arg i;
 									if ((~array[i] == e[0][0]), {~array.removeAt(i)});
 								});
+								if ((~array[0] == nil), {
+									~array.add(-1);
+									Pdef(\plucked).pause;
+									Pdef(\sawBass).pause;
+								});
 							},
 							133, {
-								~volume1 = 0;
-								Pdefn(\harpVolume, ~volume1);
+								~volumePluck = 0;
+								~volumeBass = 0;
+								Pdefn(\harpVolumePluck, ~volumePluck);
+								Pdefn(\harpVolumeBass, ~volumeBass);
 						});
 					});
-					~flag = 0;
 				});
 				(' ').postln;
 				(' ').postln;
 			});
-}.loop;}
+	}.loop;}
 ).play;
 )
 
@@ -240,9 +249,6 @@ Synth(\kick);
 Synth(\snare);
 Synth(\hihat);
 Synth(\clap);
-~bass.run(true);
-~bass.run(false);
-~bass.set(\freq, 46.midicps);
 
 
 // (
@@ -259,6 +265,5 @@ Synth(\clap);
 // )
 //
 // ~control.stop;
-
 
 
