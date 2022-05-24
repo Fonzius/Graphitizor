@@ -100,107 +100,8 @@ SynthDef(\clap, {
 }).add;
 )
 
-(
-var base;
 
-base = Pbind(\amp, 0.3);
-
-Ppar([
-    Pbindf(
-        Pbind(\amp, 0.3),
-        \instrument, Pseq([\kick, \snare, \snare, \clap, \kick], inf),
-        \dur, Pseq([4, 3, 3, 2, 4], inf)
-    ),
-    Pbindf(
-        base,
-        \instrument, Pseq([Pn(\hihat, 16), Pn(\clap, 16)], inf),
-        \dur, Pseq([Rest(2), 2, Rest(2), 2], inf)
-    )
-]).play(TempoClock(2.3 * 4));
-)
-
-
-
-//////////////////////////////////////////////////////////////////////////
-
-
-
-
-(
-{ | dur = 0.15, atk = 0.005, amp = 1 |
-	SinOsc.ar(
-		EnvGen.ar( Env(
-			NamedControl.kr(\freq_l, [2960, 70, 90]),
-			NamedControl.kr(\freq_d, [0.07, 0.2]),
-			NamedControl.kr(\freq_c, [-13, -1]),
-		) ),
-		mul:amp * EnvGen.ar(
-			Env.perc( atk, dur - atk, curve: NamedControl.kr(\amp_c, [-1, 6])),
-			doneAction: 2
-		);
-	) ! 2;
-}.asSynthDef.name_("kick2").add;
-
-{ | atk = 0.01, dur = 0.15, freq = 50, amp=0.8 |
-	BPF.ar(LFSaw.ar(freq), freq, 2, mul: EnvGen.kr( Env.perc( atk, dur-atk, amp, 6 ), doneAction: 2 )) ! 2;
-}.asSynthDef.name_("bass2").add;
-
-{ | dur = 0.15, freq = 50, amp = 0.8, index = 10 |
-	PMOsc.ar(freq, freq + 5, index, mul: amp * EnvGen.kr( Env.triangle( dur ), doneAction: 2 )) ! 2;
-}.asSynthDef.name_("bazz2").add;
-)
-
-
-(
-Ppar([
-	Pbind(*[
-		instrument: \kick2,
-		delta: 1,
-		dur: Pfunc({ thisThread.clock.beatDur }) / 4,
-		amp: Pseq([
-			Pseq([1], 16),
-			Pseq([0.8, 1], 8),
-			Pseq([1], 16),
-			Pseq([0.8, 0.8, 0.9, 1], 8)
-		], inf) * 0.8,
-		freq_l: Pstutter(Prand(2.pow((1..4)),inf), Pseq([
-			`[2960,70,90],
-			`[1260,60,110],
-			`[4360,60,120]
-		],inf))
-	]),
-	Pbind(*[
-		instrument: \bass2,
-		delta: 1/4,
-		dur: Pkey(\delta) * Pfunc({ thisThread.clock.beatDur }),
-		freq: Pseq([70, 50,60,70], inf),
-		amp:0.6
-	]),
-	Pbind(*[
-		instrument: \bazz2,
-		delta: 1/4,
-		dur: Pkey(\delta) * Pfunc({ thisThread.clock.beatDur }),
-		freq: Pseq([100,50,60,40], inf),
-		amp:0.2
-	])
-]).play(TempoClock(156/60), quant:[1])
-)
-
-// kick from above?
-(
-Pbind(*[
-	instrument: \kick2,
-	delta: Pseq(Array.geom(540, 1, 1.015).reciprocal.reverse),
-	dur: Pkey(\delta) * Pfunc({ thisThread.clock.beatDur }),
-	atk: Pkey(\dur) / 6,
-        amp: 0.8
-]).play;
-)
-
-
-
-
-//////////////////////////////////////// BASS //////////////////////////////////////////////////
+//////////////////////////////////////// SYNTHS //////////////////////////////////////////////////
 
 
 (
@@ -215,59 +116,292 @@ SynthDef("bass", { arg freq = 440, amp = 0.5, gate = 1;
 	}).add;
 )
 
+(
+SynthDef(\rhodey_sc, {
+    |
+    // standard meanings
+    out = 0, freq = 440, gate = 1, pan = 0, amp = 0.1,
+    // all of these range from 0 to 1
+    vel = 0.8, modIndex = 0.2, mix = 0.2, lfoSpeed = 0.4, lfoDepth = 0.1
+    |
+    var env1, env2, env3, env4;
+    var osc1, osc2, osc3, osc4, snd;
 
+    lfoSpeed = lfoSpeed * 12;
+
+    freq = freq * 2;
+
+    env1 = EnvGen.ar(Env.adsr(0.001, 1.25, 0.0, 0.04, curve: \lin));
+    env2 = EnvGen.ar(Env.adsr(0.001, 1.00, 0.0, 0.04, curve: \lin));
+    env3 = EnvGen.ar(Env.adsr(0.001, 1.50, 0.0, 0.04, curve: \lin));
+    env4 = EnvGen.ar(Env.adsr(0.001, 1.50, 0.0, 0.04, curve: \lin));
+
+    osc4 = SinOsc.ar(freq * 0.5) * 2pi * 2 * 0.535887 * modIndex * env4 * vel;
+    osc3 = SinOsc.ar(freq, osc4) * env3 * vel;
+    osc2 = SinOsc.ar(freq * 15) * 2pi * 0.108819 * env2 * vel;
+    osc1 = SinOsc.ar(freq, osc2) * env1 * vel;
+    snd = Mix((osc3 * (1 - mix)) + (osc1 * mix));
+    snd = snd * (SinOsc.ar(lfoSpeed) * lfoDepth + 1);
+
+    // using the doneAction: 2 on the other envs can create clicks (bc of the linear curve maybe?)
+    snd = snd * EnvGen.ar(Env.asr(0, 1, 0.1), gate, doneAction: 2);
+    snd = Pan2.ar(snd, pan, amp);
+
+    Out.ar(out, snd);
+}).add;
+)
+
+Synth.new(\rhodey_sc)
 
 (
+SynthDef(\moogpluck, {arg outbus=0, freq=440, filter=3, amp=1,coef=0.5,dur=2,legato=1,mix=0,pan=0;
+	var pluck,moog,noteOff,out;
+	pluck =	Pluck.ar(PinkNoise.ar,1,0.2,freq.reciprocal,dur*legato,coef);
+	moog = MoogFF.ar(pluck, (freq*filter),2);
+	out = SelectX.ar(mix,[LPF.ar(pluck,2500),moog]);
+	noteOff = DetectSilence.ar(out,doneAction:2);
+	Out.ar(outbus, Pan2.ar(out,pan));
+}).add;
+)
 
+(
+SynthDef(\bup, {
+	arg out=0,freq=440,ffreq=440,famp=1,fq=1,
+	    fatk = 0.01, fdec = 0.1,
+	    aatk = 0.01, adec = 0.1,
+	    amp=0.5,gate=1, len=0.2,lag=0.1;
+
+	var synth,ampEnv,filtEnv;
+
+	filtEnv = EnvGen.kr(
+		       Env.adsr(fatk,fdec,releaseTime:0.05),
+                       gate,
+		       freq*famp,
+		       ffreq);
+	ampEnv = EnvGen.kr(
+		       Env.adsr(aatk,adec,releaseTime:0.05),
+		       gate,
+                       doneAction:2);
+	synth = Mix.new([
+		LFSaw.ar(Lag.kr([freq*2,freq],lag),[0,pi],amp),
+		LFTri.ar(Lag.kr([freq,freq*2],lag),[pi,0],amp)
+	]);
+	synth = Pan2.ar(synth) * ampEnv;
+	synth = RLPF.ar(synth,filtEnv,fq);
+	Out.ar(out,synth);
+}).add;
+)
+
+////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////
+
+(
+SynthDef(\violin, {
+	| midinote=60, gate=1, amp=0.25 |
+	var env = EnvGen.kr(Env.asr(0.1, 1, 0.1), gate, doneAction:2);
+	var sig = VarSaw.ar(
+		midinote.midicps,
+		width:LFNoise2.kr(1).range(0.2, 0.8)*SinOsc.kr(5, Rand(0.0, 1.0)).range(0.7,0.8))*0.25;
+	sig = sig * env * amp;
+	Out.ar(0, sig!2);
+}).add;
+)
+
+(
+synth = SynthDef(\luce, {
+	|out = 0, freq = 440, amp = 0, amount = 24|
+	var snd;
+
+	snd = Resonz.ar( Saw.ar(freq), amount, 0.2 ); // Change this mul: variable if you want to increase the max amplitude of the synth, but go easy on it because you could easily harm your ears !
+
+	Out.ar(out, Pan2.ar(snd, 0, amp));
+}).play;
+)
+
+(
+SynthDef(\MoaningDialogue, {
+	|rateL = 0.2, rateR = 0.3, freq = 2, feedback = 50, mul = 1 , lpfreq = 2500|
+	Out.ar(0,
+		FreeVerb.ar(
+			BLowPass.ar(
+				SinOscFB.ar(
+					LFDNoise1.kr([rateL, rateR], freq), feedback;
+				, mul),
+				lpfreq,
+				0.2
+			),
+			0.3,
+			0.0
+		)
+	)}
+).add
+)
+
+(
+SynthDef(\SoundCheck, {|seconds = 7|
+	var sin1 = SinOsc.kr([110, 90], 0, [440, 330]);
+	var sin2 = SinOsc.kr(1, 0, 5, 105);
+	var sinModDepth = SinOsc.kr(0.01, 0, 10) * SinOsc.ar(0.00033, 0, 1000); //Magic number for 7 seconds
+	var sinMod = (sin1 + sin2) * sinModDepth;
+	var ampMod = SinOsc.kr(0.1, 0, 0.5, 1) * SinOsc.kr(1, 0, 0.5, 1);
+	var sinLine = SinOsc.ar(Line.kr(40, 10, seconds););
+	var sum = SinOsc.ar(sinMod, 0, ampMod).distort;
+	var comb1 = (CombL.ar(sum, 0.01, 0.005, 1) + sum) * sinLine;
+	var comb2 = (comb1 + (CombL.ar(comb1, 0.008, 0.007, 0.5) * 0.4));
+	var clip1 = comb2.clip2(1) * 0.8;
+	var env = EnvGen.ar(Env.linen(0.1, seconds - 0.2, 0.1), doneAction:2);
+	var output = (clip1 * SinOsc.ar(40) * SinOsc.ar(456)) * env;
+	Out.ar(0, output * 0.5);
+}).add;
+)
+
+(
+SynthDef("spacey", { arg freq, amp;
+	var snd, env;
+	env = Env.perc(level: amp).kr(2);
+	snd = LFSaw.ar(freq: freq, mul: env);
+	snd = RLPF.ar(
+		in: snd,
+		freq: LFNoise1.kr(2).range(500, 20000),
+		rq: 0.2
+	);
+	Out.ar(0, snd);
+}).add;
+)
+
+(
+SynthDef(\fm7_timpani,
 {
+    arg  note = 60,out_bus=0,amp=0.5,sustain = 2,release = 0.5,cutoff = 10000,rq = 1,pan = 0,lfo_speed = 5,lfo_amp = 0;
+	var ctls, mods, chans,out,pitch,gate,
 
-Mix(
+        envAmp1,envAmp2,envAmp3,envAmp4,envAmp5,envAmp6,env1,
+		envEnv1,envEnv2,envEnv3,envEnv4,envEnv5,envEnv6,envAmp,envEnv,lfo;
 
-	Resonz.ar(			//The Resonz filter has arguments input, freq, rq=bandwidth/centre frequency
+        gate = Trig1.kr(1, sustain + release);
 
-		Saw.ar([440,443,437] + SinOsc.ar(100,0,100)), //frequency modulated sawtooth wave with chorusing
+		envEnv1 = Env.new([0 ,1.0 ,0 ,0 ,0], [0.0008 ,sustain ,0.0 ,0.0], [3.0 ,-3.0 ,-3.0 ,-3.0],3);
+		envAmp1 = EnvGen.kr(envEnv1,gate,doneAction: 0);
 
-		XLine.kr(10000,5000,10), //vary filter bandwidth over time
+		envEnv2 = Env.new([0 ,0.3535 ,0 ,0 ,0], [0.0005 ,0.0829 ,0.0 ,0.0], [3.0 ,-3.0 ,-3.0 ,-3.0],3);
+		envAmp2 = EnvGen.kr(envEnv2,gate,doneAction: 0);
+        envEnv3 = Env.new([0 ,0.2985 ,0.029 ,0 ,0], [0.0005 ,0.0136 ,sustain ,0.0], [3.0 ,-3.0 ,-3.0 ,-3.0],3);
+		//envEnv3 = Env.new([0 ,0.2985 ,0.029 ,0 ,0], [0.0005 ,0.0136 ,12.8286 ,0.0], [3.0 ,-3.0 ,-3.0 ,-3.0],3);
+		envAmp3 = EnvGen.kr(envEnv3,gate,doneAction: 0);
+        envEnv4 = Env.new([0 ,0.6332 ,0.0797 ,0 ,0], [0.0006 ,2.057 ,sustain ,0.0], [3.0 ,-3.0 ,-3.0 ,-3.0],3);
+		//envEnv4 = Env.new([0 ,0.6332 ,0.0797 ,0 ,0], [0.0006 ,2.057 ,37.2485 ,0.0], [3.0 ,-3.0 ,-3.0 ,-3.0],3);
+		envAmp4 = EnvGen.kr(envEnv4,gate,doneAction: 0);
 
-		Line.kr(1,0.9, 10), //vary filter rq over time
+		envEnv5 = Env.new([0.0 ,0.1151 ,0.0 ,0.0 ,0.0], [0.0003 ,1.0517 ,0.0 ,0.0], [3.0 ,-3.0 ,-3.0 ,-3.0],3);
+		envAmp5 = EnvGen.kr(envEnv5,gate,doneAction: 0);
+
+		envEnv6 = Env.new([0.0 ,0.1055 ,0.0 ,0.0 ,0.0], [0.0004 ,215.6751 ,0.0 ,0.0], [3.0 ,-3.0 ,-3.0 ,-3.0],3);
+		envAmp6 = EnvGen.kr(envEnv6,gate,doneAction: 0);
+
+        envEnv = Env.new([0,1,1,0], [0.0001,sustain,release],[0,0,0]);
+		envAmp = EnvGen.kr(envEnv,gate,doneAction:2);
+
+		lfo = LFTri.kr(lfo_speed);
+		lfo = LinLin.ar(lfo, 0, 1, lfo_amp.neg.midiratio  , lfo_amp.midiratio);
 
 
+        pitch = note.midicps;
 
-	)
+   ctls = [
+		    [0.5 * 1 * (pitch  + ((7-7)/32))* lfo, 0, envAmp1],
 
+		    [0.5 * 1 * (pitch  + ((10-7)/32))* lfo , 0, envAmp2],
+
+		    [0.5 * 1.36 * (pitch  + ((4-7)/32))* lfo , 0, envAmp3],
+
+		    [0.5 * 1.75 * (pitch  + ((7-7)/32))* lfo , 0, envAmp4],
+
+		    [0.5 * 1 * (pitch  + ((7-7)/32))* lfo , 0, envAmp5],
+
+		    [0.5 * 1.56 * (pitch  + ((7-7)/32))* lfo, 0, envAmp6]
+	];
+
+	mods = [
+		[0, 12.5664, 12.5664, 0, 12.5664, 0],
+		[0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 12.5664, 0, 0],
+		[0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 12.5664],
+		[0, 0, 0, 0, 0, 5.5418]
+	];
+	chans = [0, 1, 2, 3, 4, 5];
+	out = FM7.ar(ctls, mods).slice(chans) * -12.dbamp;
+	out = Mix.new([
+		(out[0] * 1),
+		(out[1] * 0),
+		(out[2] * 0),
+		(out[3] * 0),
+		(out[4] * 0),
+		(out[5] * 0),
+	]);
+	out = RLPF.ar(out,cutoff,rq);
+	Out.ar(out_bus,Pan2.ar(out,pan,amp));
+}).add;
 )
 
-}.scope
 
-)
-
-
-
-
-
-
-
-
+Synth(\fm7_timpani);
+Synth(\fm7_timpani,[\sustain,5,\release,0.1,\amp,0.5,\lfo_speed,5,\lfo_amp,0.05]);
 
 
 (
-Pbind(
-	\instrument, "bass",
-	\tempo, 10,
-	\ctranspose, -24,
-	\midinote, Pseq([Pseq([60, 64, 67, 71, 55, 58, 59], 2), Pseq([67, 62, 59, 65], 1), Pseq([60, 64, 67, 71, 55, 58, 59], 1), Pseq([[60,48]],1)],inf),
-	\dur, Pseq([Pseq([8, 4, 4, 8, 4, 2, 2], 2), Pseq([8, 4, 2, 18], 1), Pseq([8, 4, 4, 8, 4, 2, 2], 1), Pseq([32],1)], inf),
-	\legato, 1,
-	\amp, 0.6,
-).play;
+SynthDef(\tar, {
+	|
+	out = 0, in = 0, inscale = 1.0, freq = 440, bw = 1.03, amp = 0.5
+	pos = 0.1,
+	hc1 = 1, hc3 = 30, hfreq = 3000,
+	vc1 = 1, vc3 = 30, vfreq = 3000
+	|
+	var inp, jawari, snd;
+	// Input audio -- may be a pluck impulse (chikari) or audio (tarafdar)
+	inp = In.ar(in, 1) * inscale;
+	// Jawari (bridge) simulation. This is the heart of Ronan's model.
+	// Violins and guitars have vertical bridges. The jawari is flat, and this causes the tar to buzz against the jawari.
+	// Physically, end of the string coming in contact the bridge causes the string to shorten.
+	// We assume that the audio output is a reasonable approximation of how much contact the string has with the bridge.
+	// So we shorten the DWG (by adjusting its frequency) according to its own audio output.
+	jawari = LocalIn.ar(1);
+	// Make the jawari control rate
+	jawari = A2K.kr(jawari);
+	// Make the jawari affect the freq exponentially
+	jawari = jawari.linexp(-1, 1, bw.reciprocal, bw);
+	// The string itself has horizontal and vertical planes, which we simulate with two different DWGPlucked instances
+	snd = [
+		DWGPlucked.ar(freq * jawari, pos: pos, c1: hc1, c3: hc3, inp: LPF.ar(inp, hfreq)),
+		DWGPlucked.ar(freq * jawari, pos: pos, c1: vc1, c3: vc3, inp: LPF.ar(inp, vfreq))
+	].sum;
+	LocalOut.ar(snd);
+	Out.ar(out, snd * amp);
+}).add;
 
-Ppar([
-    Pbindf(
-        Pbind(\amp, 0.9),
-		\tempo, 10,
-        \instrument, Pseq([\kick, \snare, \clap, \clap, \clap, \kick, \snare], inf),
-        \dur, Pseq([4, 3, 1, 1, 1, 2, 4], inf)
-    ),
-]).play;
+SynthDef(\pluckImpulse, {
+	|out = 0, t_trig = 0, amp = 0.3|
+	Out.ar(out, PinkNoise.ar * EnvGen.kr(Env.perc(0.01, 0.02), t_trig) * amp);
+}).add;
+
+// Useful for testing. For programmatic usage use \pluckImpulse
+SynthDef(\mousePluck, {
+	|out = 0, num = 0, amp = 0.3|
+	var m = MouseY.kr(0, 8);
+	var trig = (num <= m) & (m < (num + 1)) * MouseButton.kr(0, 1, 0);
+	Out.ar(out, HPF.ar(WhiteNoise.ar, 400) * EnvGen.kr(Env.perc(0.001, 0.03, 0.5), trig) * amp);
+}).add;
+
+SynthDef(\sitar, {
+	|out = 0, chikari = 0, tarafdar = 0, dry = 0.5, wet = 0.5, amp = 0.5|
+	var snd = In.ar(chikari, 1) * dry;
+	var lfo;
+	snd = snd + (In.ar(tarafdar, 1) * wet);
+	// Dumb gourd model. I randomly picked lope only transitions to the release node when released. Examples are below. Tfreqs/bws/amps.
+	// Please let me know if you have some estimates of the resonances of a real sitar gourd.
+	snd = snd + BPF.ar(snd, [90, 132, 280], [1.3, 0.9, 1.4], [0.9, 0.6, 0.7]).sum;
+	snd = Pan2.ar(GVerb.ar(0.3*snd, roomsize:1, damping:0.7), 0, amp);
+	Out.ar(out, snd);
+}).add;
 )
-)
+
