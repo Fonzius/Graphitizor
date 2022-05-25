@@ -47,7 +47,7 @@ void loop() {
   newReadHiHat = !digitalRead(HIHAT_PIN);
   newReadHarp = !digitalRead(HARP_PIN);
 
-/*
+
   if((newReadKick != oldReadKick) && newReadKick){ //KICK OFFSET : +0 (channel 0)
     midiMsg(MIDI_NOTE_ON,0x1E,0x7F); //note on, max velocity, 0x1E = 30 (0 midi)
   }else if((newReadKick != oldReadKick) && !newReadKick){
@@ -71,13 +71,14 @@ void loop() {
   }else if((newReadHiHat != oldReadHiHat) && !newReadHiHat){
     midiMsg(MIDI_NOTE_OFF + 3,0x1E,0x7F); //note off, max velocity, 0x1E = 30 (0 midi)
   }
-  */
+  
 
   if((newReadHarp != oldReadHarp) && newReadHarp){ //HARP OFFSET : +4 (channel 1)
     midiMsg(MIDI_NOTE_ON + 4,0x1E,0x7F); //note on, max velocity, 0x1E = 30 (0 midi)
   }else if((newReadHarp != oldReadHarp) && !newReadHarp){
     midiMsg(MIDI_NOTE_OFF + 4,0x1E,0x7F); //note off, max velocity, 0x1E = 30 (0 midi)
   }
+
 
   oldReadKick = newReadKick;
   oldReadSnare = newReadSnare;
@@ -108,6 +109,7 @@ void loop() {
 
 void midiMsg(int cmd, int pitch, int velocity) {
   //Serial.print('z'); // z = midi message start
+
   Serial.print(cmd); 
   Serial.print('a'); // a = fine command
   Serial.print(pitch);
@@ -115,4 +117,5 @@ void midiMsg(int cmd, int pitch, int velocity) {
   Serial.print(velocity);
   Serial.print('c'); // c = fine velocity e fine midi message
   Serial.println(' ');
+
 }
