@@ -1,7 +1,8 @@
 HandyRenderer h;
 HandyRenderer hThunder;
 
-Synth synth;
+OscP5 osc;
+NetAddress supercollider;
 
 int numSegments = 25;
 int numFxPad = 8;

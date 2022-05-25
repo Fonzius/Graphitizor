@@ -1,5 +1,4 @@
 import org.gicentre.handy.*;
-import supercollider.*;
 import oscP5.*;
 import netP5.*;
 
@@ -9,6 +8,10 @@ void setup(){
   
   hThunder.setRoughness(5);
   hThunder.setStrokeColour(color(0,0,255));
+  
+  //Setup OSC Communication with SC
+  osc = new OscP5(this, 12000);
+  supercollider = new NetAddress("127.0.0.1", 57123);
   
   
   size(1000,800);
@@ -32,10 +35,6 @@ void setup(){
   
    for(int j = 0; j<numInstrumentPad; j++)
     instrumentPad[j] = new InstrumentPad((float)width-circleSize, (float) height/2 + random(-200,200));
-    
-  synth = new Synth("Reverb");
-  synth.set("dry_wet", 0.5);
-  synth.set("room", 0.5);
 }
 
 

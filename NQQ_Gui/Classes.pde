@@ -181,6 +181,10 @@ class InstrumentPad extends Pad{
   
   void isMoved(){
     if(snappedTo!=-1){
+      OscMessage msg = new OscMessage("/removed");
+      msg.add(snappedTo);
+      osc.send(msg, supercollider);
+      
       selectionPad[snappedTo].empty();
       this.snappedTo = -1;
     }
@@ -195,6 +199,9 @@ class InstrumentPad extends Pad{
         selectionPad[j].fill();
         snappedTo = j;
         
+        OscMessage msg = new OscMessage("/snapped");
+        msg.add(snappedTo);
+        osc.send(msg, supercollider);
         break;
       }
     }
