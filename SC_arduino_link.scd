@@ -1,7 +1,5 @@
 s.reboot;
-
 s.latency=0.2;
-
 SerialPort.devices;
 ~port = SerialPort.new("COM3", 115200);
 
@@ -226,6 +224,7 @@ e.add(Scale.aeolian.degrees);
 e.add(Scale.locrian.degrees);
 e.add(Scale.minor.degrees);
 
+~processing = NetAddr("127.0.0.1", 12000);
 ~array = Array.new(15);
 ~array.add(-1);
 ~volumePluck = 0;
@@ -392,6 +391,7 @@ Pdef(\plucked, Pbind(\tempo, 40,\instrument, Pdefn(\secondDef), \note, Pdefn(\no
 							Pdefn(\harpVolumeBass, ~volumeBass);
 							~volumePluck.postln;  //DEBUG
 							~volumeBass.postln;  //DEBUG
+							~processing.sendMsg("/harpVolume", ~val2);
 					});
 				},{
 					if (((~val1 > 127) && (~val1 < 144)), {
@@ -460,6 +460,7 @@ Pdef(\plucked, Pbind(\tempo, 40,\instrument, Pdefn(\secondDef), \note, Pdefn(\no
 								~volumeBass = 0;
 								Pdefn(\harpVolumePluck, ~volumePluck);
 								Pdefn(\harpVolumeBass, ~volumeBass);
+								~processing.sendMsg("/harpVolume", ~val2);
 						});
 					});
 				});
@@ -493,19 +494,4 @@ Synth(\snare);
 Synth(\hihat);
 Synth(\clap);
 
-
-// (
-// ~control = Routine.new(
-// 	{
-// 		{
-// 			if (((~val1 > 143) && (~val1 < 160)),{
-// 				a = Synth.new(\kick);// cmd = 0x9* -> noteOn
-// 			});
-// 			0.01.wait;
-// 		}.loop;
-// 	}
-// ).play;
-// )
-//
-// ~control.stop;
 

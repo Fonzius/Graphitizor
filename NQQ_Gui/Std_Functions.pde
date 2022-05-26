@@ -74,6 +74,7 @@ void keyPressed(){
 
 void oscEvent(OscMessage msg){
   if(msg.checkAddrPattern("/harpVolume")){
-    hThunder.setStrokeColour(color(0,0,msg.get(0).floatValue()));
+    println("ysysys");
+    hThunder.setStrokeColour(color(0,0,255-msg.get(0).intValue()));
   }
 }
