@@ -10,7 +10,7 @@ void setup(){
   hThunder.setStrokeColour(color(0,0,255));
   
   //Setup OSC Communication with SC
-  osc = new OscP5(this, 12000);
+  osc = new OscP5(this, 1200);
   supercollider = new NetAddress("127.0.0.1", 57123);
   
   
