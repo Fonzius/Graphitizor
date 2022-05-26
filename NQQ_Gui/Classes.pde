@@ -120,7 +120,7 @@ class SelectionPad extends Pad{
   }
   void thunder(){
   
-    int tLenght = thunderDuration/5; 
+    int tLenght = thunderDuration/2; 
     
     float ax = fiveVPad.getX();
     float ay = fiveVPad.getY();
@@ -139,14 +139,14 @@ class SelectionPad extends Pad{
           hThunder.vertex(ax + i*thunderDistance*cos(thunderAngle)/thunderDuration, ay+i*thunderDistance*sin(thunderAngle)/thunderDuration);
         }
       hThunder.endShape();
-    }/*
-   else if(this.thunderTime >= tLenght && this.thunderTime <= thunderDuration){
-      hThunder.beginShape();
-        for(int i = tLenght; i<=thunderTime; i++){
-          hThunder.vertex(ax + i*thunderDistance*cos(thunderAngle)/thunderDuration, ay+i*thunderDistance*sin(thunderAngle)/thunderDuration);
-        }
-      hThunder.endShape();
-    }*/
+    }
+   else if(this.thunderTime > thunderDuration && this.thunderTime <= thunderDuration+tLenght){
+     hThunder.beginShape();
+       for(int i = thunderTime-tLenght; i<=thunderDuration; i++){
+         hThunder.vertex(ax + i*thunderDistance*cos(thunderAngle)/thunderDuration, ay+i*thunderDistance*sin(thunderAngle)/thunderDuration);
+       }
+     hThunder.endShape();
+   }
   
    if(this.thunderTime<thunderDuration+tLenght)
      this.thunderTime++;
