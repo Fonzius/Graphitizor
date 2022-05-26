@@ -71,3 +71,9 @@ void keyPressed(){
     }
   }
 }
+
+void oscEvent(OscMessage msg){
+  if(msg.checkAddrPattern("/harpVolume")){
+    hThunder.setStrokeColour(color(0,0,msg.get(0).floatValue()));
+  }
+}

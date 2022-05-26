@@ -139,7 +139,14 @@ class SelectionPad extends Pad{
           hThunder.vertex(ax + i*thunderDistance*cos(thunderAngle)/thunderDuration, ay+i*thunderDistance*sin(thunderAngle)/thunderDuration);
         }
       hThunder.endShape();
-    }
+    }/*
+   else if(this.thunderTime >= tLenght && this.thunderTime <= thunderDuration){
+      hThunder.beginShape();
+        for(int i = tLenght; i<=thunderTime; i++){
+          hThunder.vertex(ax + i*thunderDistance*cos(thunderAngle)/thunderDuration, ay+i*thunderDistance*sin(thunderAngle)/thunderDuration);
+        }
+      hThunder.endShape();
+    }*/
   
    if(this.thunderTime<thunderDuration+tLenght)
      this.thunderTime++;
