@@ -121,7 +121,7 @@ SynthDef(\pluck, {arg outbus=0, freq=440, filter=3, amp=1,coef=0.5,dur=2,legato=
 }).add;
 
 
-SynthDef(\rhodey_sc, {
+SynthDef(\rhodes, {
     |out = 0, freq = 440, gate = 1, pan = 0, amp = 0.1,
     // all of these range from 0 to 1
     vel = 0.8, modIndex = 0.2, mix = 0.2, lfoSpeed = 0.4, lfoDepth = 0.1|
@@ -144,7 +144,7 @@ SynthDef(\rhodey_sc, {
     snd = Mix((osc3 * (1 - mix)) + (osc1 * mix));
     snd = snd * (SinOsc.ar(lfoSpeed) * lfoDepth + 1);
 
-    snd = snd * EnvGen.ar(Env.asr(0, 1, 0.1), gate, doneAction: 2);
+    snd = snd/2 * EnvGen.ar(Env.asr(0, 1, 0.1), gate, doneAction: 2);
     snd = Pan2.ar(snd, pan, amp);
 
     Out.ar(out, snd);
@@ -214,50 +214,42 @@ SynthDef(\MoaningDialogue, {
 
 
 
-e= Array.new(7);
-e.add(Scale.ionian.degrees);
-e.add(Scale.dorian.degrees);
-e.add(Scale.phrygian.degrees);
-e.add(Scale.lydian.degrees);
-e.add(Scale.mixolydian.degrees);
-e.add(Scale.aeolian.degrees);
-e.add(Scale.locrian.degrees);
-e.add(Scale.minor.degrees);
+
 
 ~processing = NetAddr("127.0.0.1", 12000);
 ~array = Array.new(15);
 ~array.add(-1);
-~volumePluck = 0;
-~volumeBass = 0;
-~reverb = 0;
-~mode = 0; // 0: Ionian, 1: Dorian, ... , 6: locrian, 7: melodic minor
-~modeNew = 0; //inizialization, we'll use that later to make a block in which we change the mode
-Pdefn(\noteseq, Pseq(~array, inf));
-Pdefn(\harpVolumePluck, ~volumePluck);
-Pdefn(\harpVolumeBass, ~volumeBass);
-Pdefn(\reverb, ~reverb);
-Pdefn(\firstDef, \bass);
-Pdefn(\secondDef, \pluck);
 
-Pdef(\plucked, Pbind(\tempo, 40,\instrument, Pdefn(\secondDef), \note, Pdefn(\noteseq), \dur, 12, \amp, Pdefn(\harpVolumePluck), \delt, 0.3, \dect, 0.6, \mixrev, Pdefn(\reverb)));
-	Pdef(\sawBass, Pbind(\tempo, 40,\instrument, Pdefn(\firstDef), \note, Pdefn(\noteseq), \dur, 24, \ctranspose, -24, \amp, Pdefn(\harpVolumeBass)));
+~volumeMedium = 1;
+~volumeLow = 0.5;
+
+Pdefn(\harpVolumeHigh, ~volumeMedium);
+Pdefn(\harpVoluMemedium, ~volumeMedium);
+Pdefn(\harpVolumeLow, ~volumeLow);
+
+//Pdefn(\inst1, \rhodes);
+Pdefn(\inst2, \pluck);
+Pdefn(\inst3, \bass);
+
+Pdefn(\time, 8);
+
+//Pdef(\high, Pbind(\tempo, Pdefn(\time) ,\instrument, Pdefn(\inst1), \note, Pdefn(\noteseq), \dur, 4, \ctranspose, 12, \amp, Pdefn(\harpVolumeHigh)));
+
+Pdef(\medium, Pbind(\tempo, Pdefn(\time) ,\instrument, Pdefn(\inst2), \note, Pdefn(\noteseq), \dur, 3, \amp, Pdefn(\harpVolumeMedium)));
+
+Pdef(\low, Pbind(\tempo, Pdefn(\time) ,\instrument, Pdefn(\inst3), \note, Pdefn(\noteseq), \dur, 4, \ctranspose, -24, \amp, Pdefn(\harpVolumeLow)));
 
 )
+
+//
+// Pdefn(\noteseq, Pseq([0,1,2], inf));
+// Pdef(\high).play
 
 
 (
 /////////////////////////////////////////////// ROUTINE ////////////////////////////////////////////////
-
 ~charArray = [0];
 ~flag = 0;
-~oldVal1 = 0;
-~flag0 = 0;
-~flag1 = 0;
-~flag2 = 0;
-~flag3 = 0;
-~flag4 = 0;
-~flag5 = 0;
-~flag6 = 0;
 ~getValues = Routine.new(
 	{ var ascii;
 		{ ascii = ~port.read.asAscii;
@@ -285,183 +277,70 @@ Pdef(\plucked, Pbind(\tempo, 40,\instrument, Pdefn(\secondDef), \note, Pdefn(\no
 				if (((~val1 > 143) && (~val1 < 160)),{
 					switch(~val1,
 						144, {
-							for(0, 6, {
+							for(0, 12, {
 								arg i;
-								if ((~array[i] == e[~mode][~val1%144]), {~flag0 = 1});
+								if ((~array[i] == ~val2), {~flag = 1; ~array.postln;});
 							});
-							if ((~flag0 == 0), {
+							~flag.postln;
+							if ((~flag == 0), {
 								if ((~array[0] == -1),{
 									~array.removeAt(0);
-									~array.add(e[~mode][~val1%144]);
+									~array.add(~val2);
 									Pdefn(\noteseq, Pseq(~array, inf));
-									Pdef(\plucked).play;
-									Pdef(\sawBass).play;
+									//Pdef(\high).play;
+									Pdef(\medium).play;
+									Pdef(\low).play;
 								},{
-									~array.add(e[~mode][~val1%144]);
-									Pdef(\plucked).resume;
-									Pdef(\sawBass).resume;
+									~array.add(~val2);
+									Pdefn(\noteseq, Pseq(~array, inf));
 								});
 							});
-							~flag0 = 0;
+							~flag = 0;
 						},
 						145, {
-							for(0, 6, {
-								arg i;
-								if ((~array[i] == e[~mode][~val1%144]), {~flag1 = 1});
-							});
-							if ((~flag1 == 0), {
-								if ((~array[0] == -1),{
-									~array.removeAt(0);
-									~array.add(e[~mode][~val1%144]);
-									Pdefn(\noteseq, Pseq(~array, inf));
-									Pdef(\plucked).play;
-									Pdef(\sawBass).play;
-								},{
-									~array.add(e[~mode][~val1%144]);
-									Pdef(\plucked).resume;
-									Pdef(\sawBass).resume;
-								});
-							});
-							~flag1 = 0;
-						},
-						146, {
-							for(0, 6, {
-								arg i;
-								if ((~array[i] == e[~mode][~val1%144]), {~flag2 = 1});
-							});
-							if ((~flag2 == 0), {
-								if ((~array[0] == -1),{
-									~array.removeAt(0);
-									~array.add(e[~mode][~val1%144]);
-									Pdefn(\noteseq, Pseq(~array, inf));
-									Pdef(\plucked).play;
-									Pdef(\sawBass).play;
-								},{
-									~array.add(e[~mode][~val1%144]);
-									Pdef(\plucked).resume;
-									Pdef(\sawBass).resume;
-								});
-							});
-							~flag2 = 0;
-						},
+							Pdefn(\time, ~val2/11);
+						},/*
+						146, {/*vol batteria*/},
 						147, {
-							for(0, 6, {
-								arg i;
-								if ((~array[i] == e[~mode][~val1%144]), {~flag3 = 1});
-							});
-							if ((~flag3 == 0), {
-								if ((~array[0] == -1),{
-									~array.removeAt(0);
-									~array.add(e[~mode][~val1%144]);
-									Pdefn(\noteseq, Pseq(~array, inf));
-									Pdef(\plucked).play;
-									Pdef(\sawBass).play;
-								},{
-									~array.add(e[~mode][~val1%144]);
-									Pdef(\plucked).resume;
-									Pdef(\sawBass).resume;
-								});
-							});
-							~flag3 = 0;
-						},
-						148, {
-							for(0, 6, {
-								arg i;
-								if ((~array[i] == e[~mode][~val1%144]), {~flag4 = 1});
-							});
-							if ((~flag4 == 0), {
-								if ((~array[0] == -1),{
-									~array.removeAt(0);
-									~array.add(e[~mode][~val1%144]);
-									Pdefn(\noteseq, Pseq(~array, inf));
-									Pdef(\plucked).play;
-									Pdef(\sawBass).play;
-								},{
-									~array.add(e[~mode][~val1%144]);
-									Pdef(\plucked).resume;
-									Pdef(\sawBass).resume;
-								});
-							});
-							~flag4 = 0;
-						},
-						149, {
-							~volumePluck = ~val2/255;
-							~volumeBass = ~val2/700;
-							Pdefn(\harpVolumePluck, ~volumePluck);
-							Pdefn(\harpVolumeBass, ~volumeBass);
-							~volumePluck.postln;  //DEBUG
-							~volumeBass.postln;  //DEBUG
+							~volumeMedium = ~val2/255;
+							~volumeLow = ~val2/700;
+							Pdefn(\harpVolumeMedium, ~volumeMedium);
+							Pdefn(\harpVolumeLow, ~volumeLow);
+							~volumeMedium.postln;  //DEBUG
+							~volumeLow.postln;  //DEBUG
 							~processing.sendMsg("/harpVolume", ~val2);
-					});
+						}
+*/
+
+					);
 				},{
 					if (((~val1 > 127) && (~val1 < 144)), {
 						switch(~val1,
 							128,{
-								for(0, 6, {
+								if((~array.size == 1), {
+									~array.put(0, -1);
+									Pdef(\medium).pause;
+									Pdef(\low).pause;
+								},{for(0, 12, {
 									arg i;
-									if ((~array[i] == e[~mode][~val1%128]), {~array.removeAt(i)});
+									if ((~array[i] == ~val2), {
+										~array.removeAt(i);
+										Pdefn(\noteseq, Pseq(~array, inf));
+									});
 								});
-								if ((~array[0] == nil), {
-									~array.add(-1);
-									Pdef(\plucked).pause;
-									Pdef(\sawBass).pause;
-								});
-
-							},
-							129,{
-								for(0, 6, {
-									arg i;
-									if ((~array[i] == e[~mode][~val1%128]), {~array.removeAt(i)});
-								});
-								if ((~array[0] == nil), {
-									~array.add(-1);
-									Pdef(\plucked).pause;
-									Pdef(\sawBass).pause;
-								});
-
-							},
-							130,{
-								for(0, 6, {
-									arg i;
-									if ((~array[i] == e[~mode][~val1%128]), {~array.removeAt(i)});
-								});
-								if ((~array[0] == nil), {
-									~array.add(-1);
-									Pdef(\plucked).pause;
-									Pdef(\sawBass).pause;
-								});
-
-							},
-							131,{
-								for(0, 6, {
-									arg i;
-									if ((~array[i] == e[~mode][~val1%128]), {~array.removeAt(i)});
-								});
-								if ((~array[0] == nil), {
-									~array.add(-1);
-									Pdef(\plucked).pause;
-									Pdef(\sawBass).pause;
-								});
-
-							},
-							132, {
-								for(0, 6, {
-									arg i;
-									if ((~array[i] == e[~mode][~val1%128]), {~array.removeAt(i)});
-								});
-								if ((~array[0] == nil), {
-									~array.add(-1);
-									Pdef(\plucked).pause;
-									Pdef(\sawBass).pause;
-								});
-							},
+								});/*,
 							133, {
 								~volumePluck = 0;
 								~volumeBass = 0;
 								Pdefn(\harpVolumePluck, ~volumePluck);
 								Pdefn(\harpVolumeBass, ~volumeBass);
 								~processing.sendMsg("/harpVolume", ~val2);
-						});
+								}*/
+							},
+							129, {
+								Pdefn(\time, 1);
+							}
+						);
 					});
 				});
 				(' ').postln;
@@ -471,18 +350,18 @@ Pdef(\plucked, Pbind(\tempo, 40,\instrument, Pdefn(\secondDef), \note, Pdefn(\no
 ).play;
 
 
-OSCdef(\snap, {
-	arg msg;
-	msg[1].postln;
-	switch(msg[1],
-		0, {Pdefn(\firstDef, \violin)},
-		1, {Pdefn(\firstDef, \bup)},
-		2, {Pdefn(\secondDef, \bup)},
-		3, {Pdefn(\firstDef, \hihat)},
-		4, {Pdefn(\secondDef, \pluck)},
-		5, {Pdefn(\firstDef, \bass)}
-	);
-}, "/snapped");
+// OSCdef(\snap, {
+// 	arg msg;
+// 	msg[1].postln;
+// 	switch(msg[1],
+// 		0, {Pdefn(\firstDef, \violin)},
+// 		1, {Pdefn(\firstDef, \bup)},
+// 		2, {Pdefn(\secondDef, \bup)},
+// 		3, {Pdefn(\firstDef, \hihat)},
+// 		4, {Pdefn(\secondDef, \pluck)},
+// 		5, {Pdefn(\firstDef, \bass)}
+// 	);
+// }, "/snapped");
 
 )
 
@@ -495,3 +374,6 @@ Synth(\hihat);
 Synth(\clap);
 
 
+Pdefn(\inst3, \bup)
+
+Pbind(\instrument, \rhodes, 
