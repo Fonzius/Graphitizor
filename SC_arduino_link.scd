@@ -53,18 +53,27 @@ SynthDef(\snare, {
 }).add;
 
 
-SynthDef(\hihat, {
-    |out = 0, pan = 0, amp = 0.9|
-    var click, clickAmp;
-    var noise, noiseAmp;
-    var snd;
-
-
-    noiseAmp = EnvGen.ar(Env.perc(0.001, 0.3, curve: -8), doneAction: 2);
-    noise = Mix(BPF.ar(ClipNoise.ar, [4010, 4151], [0.15, 0.56], [1.0, 0.6])) * 0.7 * noiseAmp;
-    snd = noise;
-    Out.ar(out, Pan2.ar(snd, pan, amp));
+// Not techno but sounds good to me
+SynthDef(\hihat, {arg out = 0, amp = 0.5, att = 0.01, rel = 0.2, ffreq = 6000, pan = 0;
+	var env, snd;
+	env = Env.perc(att, rel, amp).kr(doneAction: 2);
+	snd = WhiteNoise.ar;
+	snd = HPF.ar(in: snd, freq: ffreq, mul: env);
+	Out.ar(out, Pan2.ar(snd, pan));
 }).add;
+
+// SynthDef(\hihat, {
+// 	|out = 0, pan = 0, amp = 0.9|
+// 	var click, clickAmp;
+// 	var noise, noiseAmp;
+// 	var snd;
+//
+//
+// 	noiseAmp = EnvGen.ar(Env.perc(0.001, 0.3, curve: -8), doneAction: 2);
+// 	noise = Mix(BPF.ar(ClipNoise.ar, [4010, 4151], [0.15, 0.56], [1.0, 0.6])) * 0.7 * noiseAmp;
+// 	snd = noise;
+// 	Out.ar(out, Pan2.ar(snd, pan, amp));
+// }).add;
 
 
 SynthDef(\clap, {
@@ -145,9 +154,8 @@ SynthDef(\rhodes, {
     snd = snd * (SinOsc.ar(lfoSpeed) * lfoDepth + 1);
 
     snd = snd/2 * EnvGen.ar(Env.asr(0, 1, 0.1), gate, doneAction: 2);
-    snd = Pan2.ar(snd, pan, amp);
 
-    Out.ar(out, snd);
+    Out.ar(out, snd*amp);
 }).add;
 
 
@@ -212,38 +220,71 @@ SynthDef(\MoaningDialogue, {
 	)}
 ).add;
 
-
-
-
+SynthDef("synth", { arg freq = 440, amp = 0.1, att = 0.1, rel = 0.7, lofreq = 1000, hifreq = 3000;
+    var env, snd;
+    env = Env.perc(
+		attackTime: att,
+		releaseTime: rel,
+		level: amp
+	).kr(doneAction: 2);
+    snd = Saw.ar(freq: freq * [0.99, 1, 1.001, 1.008], mul: env);
+	snd = LPF.ar(
+		in: snd,
+		freq: LFNoise2.kr(1).range(lofreq, hifreq)
+	);
+    snd = Splay.ar(snd);
+    Out.ar(0, snd);
+}).add;
 
 ~processing = NetAddr("127.0.0.1", 12000);
+
 ~array = Array.new(15);
 ~array.add(-1);
 
+~volumeHigh = 0.3;
 ~volumeMedium = 1;
-~volumeLow = 0.5;
+~volumeLow = 0.3;
+~drumVol = 0.5;
 
-Pdefn(\harpVolumeHigh, ~volumeMedium);
-Pdefn(\harpVoluMemedium, ~volumeMedium);
-Pdefn(\harpVolumeLow, ~volumeLow);
+~beat = 20;
 
-//Pdefn(\inst1, \rhodes);
+~kickSeq  = [Rest(4), Rest(4), Rest(4), Rest(4), Rest(4), Rest(4), Rest(4), Rest(4)];
+~snareSeq = [Rest(4), Rest(4), Rest(4), Rest(4), Rest(4), Rest(4), Rest(4), Rest(4)];
+~hihatSeq = [Rest(4), Rest(4), Rest(4), Rest(4), Rest(4), Rest(4), Rest(4), Rest(4)];
+~clapSeq  = [Rest(4), Rest(4), Rest(4), Rest(4), Rest(4), Rest(4), Rest(4), Rest(4)];
+
+
+
+Pdefn(\inst1, \rhodes);
 Pdefn(\inst2, \pluck);
 Pdefn(\inst3, \bass);
 
-Pdefn(\time, 8);
+Pdefn(\harpVolumeHigh, ~volumeHigh);
+Pdefn(\harpVoluMemedium, ~volumeMedium);
+Pdefn(\harpVolumeLow, ~volumeLow);
+Pdefn(\drumVolume, ~drumVol);
 
-//Pdef(\high, Pbind(\tempo, Pdefn(\time) ,\instrument, Pdefn(\inst1), \note, Pdefn(\noteseq), \dur, 4, \ctranspose, 12, \amp, Pdefn(\harpVolumeHigh)));
+Pdefn(\harpBeat, ~beat);
 
-Pdef(\medium, Pbind(\tempo, Pdefn(\time) ,\instrument, Pdefn(\inst2), \note, Pdefn(\noteseq), \dur, 3, \amp, Pdefn(\harpVolumeMedium)));
+Pdefn(\seqKick,  Pseq(~kickSeq, inf));
+Pdefn(\seqSnare, Pseq(~snareSeq, inf));
+Pdefn(\seqHihat, Pseq(~hihatSeq, inf));
+Pdefn(\seqClap,  Pseq(~clapSeq, inf));
 
-Pdef(\low, Pbind(\tempo, Pdefn(\time) ,\instrument, Pdefn(\inst3), \note, Pdefn(\noteseq), \dur, 4, \ctranspose, -24, \amp, Pdefn(\harpVolumeLow)));
+////////////////////////////////////////// Definition of PBINDs ////////////////////////////////////////////
 
+Pdef(\high, Pbind(\tempo, Pdefn(\harpBeat) ,\instrument, Pdefn(\inst1), \note, Pdefn(\noteseq), \dur, 2, \ctranspose, 12, \amp, Pdefn(\harpVolumeHigh)));
+
+Pdef(\medium, Pbind(\tempo, Pdefn(\harpBeat) ,\instrument, Pdefn(\inst2), \note, Pdefn(\noteseq), \dur, 4, \amp, Pdefn(\harpVolumeMedium)));
+
+Pdef(\low, Pbind(\tempo, Pdefn(\harpBeat) ,\instrument, Pdefn(\inst3), \note, Pdefn(\noteseq), \dur, 8, \ctranspose, -24, \amp, Pdefn(\harpVolumeLow)));
+
+Pdef(\drumKick, Pbind(\tempo, Pdefn(\harpBeat), \instrument, \kick, \dur, Pdefn(\seqKick), \amp, Pdefn(\drumVolume)));
+Pdef(\drumSnare, Pbind(\tempo, Pdefn(\harpBeat), \instrument, \snare, \dur, Pdefn(\seqSnare), \amp, Pdefn(\drumVolume)));
+Pdef(\drumHihat, Pbind(\tempo, Pdefn(\harpBeat), \instrument, \hihat, \dur, Pdefn(\seqHihat), \amp, Pdefn(\drumVolume)));
+Pdef(\drumClap, Pbind(\tempo, Pdefn(\harpBeat), \instrument, \clap, \dur, Pdefn(\seqClap), \amp, Pdefn(\drumVolume)));
 )
 
-//
-// Pdefn(\noteseq, Pseq([0,1,2], inf));
-// Pdef(\high).play
 
 
 (
@@ -298,7 +339,8 @@ Pdef(\low, Pbind(\tempo, Pdefn(\time) ,\instrument, Pdefn(\inst3), \note, Pdefn(
 							~flag = 0;
 						},
 						145, {
-							Pdefn(\time, ~val2/11);
+							~beat = ~val2/11;
+							Pdefn(\harpBeat, ~beat);
 						},/*
 						146, {/*vol batteria*/},
 						147, {
@@ -338,7 +380,8 @@ Pdef(\low, Pbind(\tempo, Pdefn(\time) ,\instrument, Pdefn(\inst3), \note, Pdefn(
 								}*/
 							},
 							129, {
-								Pdefn(\time, 1);
+								~beat = 1;
+								Pdefn(\harpBeat, ~beat);
 							}
 						);
 					});
@@ -364,7 +407,34 @@ Pdef(\low, Pbind(\tempo, Pdefn(\time) ,\instrument, Pdefn(\inst3), \note, Pdefn(
 // }, "/snapped");
 
 )
+////////////////////////////////////////// Prove per Pbind //////////////////////////////////
+(
+Pdefn(\noteseq, Pseq([0, 2, 4, 5], inf));
 
+Pdef(\high).play;
+Pdef(\medium).play;
+Pdef(\low).play;
+
+Pdef(\drumKick).play;
+Pdef(\drumSnare).play;
+Pdef(\drumHihat).play;
+Pdef(\drumClap).play;
+
+)
+(
+~kickSeq  = [4, Rest(4), Rest(4), 4, Rest(4), 4, Rest(4), Rest(4)];
+~snareSeq = [Rest(4), 4, 4, Rest(4), Rest(4), Rest(4), 4, Rest(4)];
+~hihatSeq = [Rest(4), 4, 4, Rest(4), Rest(4), 4, Rest(4), Rest(4)];
+~clapSeq  = [Rest(4), Rest(4), Rest(4), Rest(4), 4, Rest(4), Rest(4), 4];
+
+Pdefn(\seqKick,  Pseq(~kickSeq, inf));
+Pdefn(\seqSnare, Pseq(~snareSeq, inf));
+Pdefn(\seqHihat, Pseq(~hihatSeq, inf));
+Pdefn(\seqClap,  Pseq(~clapSeq, inf));
+
+)
+
+/////////////////////////////////////////////////////////////////////////////////////////////
 ~getValues.stop;
 
 NetAddr.localAddr
@@ -375,5 +445,3 @@ Synth(\clap);
 
 
 Pdefn(\inst3, \bup)
-
-Pbind(\instrument, \rhodes, 
