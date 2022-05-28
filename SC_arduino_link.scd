@@ -9,6 +9,7 @@ SerialPort.devices;
 SynthDef(\silence, {
 	|gate = 1|
 	var env, snd;
+	~processing.sendMsg("/drumBeat", "drumOn");
 	env = Env.adsr(0.5, 3, 1, 0.2).kr(doneAction:2, gate: gate);
 	snd = 0 * env;
 	Out.ar([0,1], snd);
@@ -186,7 +187,6 @@ SynthDef(\bup, {
 }).add;
 
 
-
 SynthDef(\violin, {
 	| midinote=60, gate=1, amp=0.25 |
 	var env = EnvGen.kr(Env.asr(0.1, 1, 0.1), gate, doneAction:2);
@@ -236,6 +236,7 @@ SynthDef("synth", { arg freq = 440, amp = 0.1, att = 0.1, rel = 0.7, lofreq = 10
     Out.ar(0, snd);
 }).add;
 
+
 ~processing = NetAddr("127.0.0.1", 12000);
 
 ~array = Array.new(15);
@@ -253,7 +254,9 @@ SynthDef("synth", { arg freq = 440, amp = 0.1, att = 0.1, rel = 0.7, lofreq = 10
 ~hihatSeq = [Rest(4), Rest(4), Rest(4), Rest(4), Rest(4), Rest(4), Rest(4), Rest(4)];
 ~clapSeq  = [Rest(4), Rest(4), Rest(4), Rest(4), Rest(4), Rest(4), Rest(4), Rest(4)];
 
-
+~pitchHigh = 12;
+~pitchMedium = 0;
+~pitchLow = -24;
 
 Pdefn(\inst1, \rhodes);
 Pdefn(\inst2, \pluck);
@@ -271,13 +274,17 @@ Pdefn(\seqSnare, Pseq(~snareSeq, inf));
 Pdefn(\seqHihat, Pseq(~hihatSeq, inf));
 Pdefn(\seqClap,  Pseq(~clapSeq, inf));
 
+Pdefn(\highPitch, ~pitchHigh);
+Pdefn(\mediumPitch, ~pitchMedium);
+Pdefn(\lowPitch, ~pitchLow);
+
 ////////////////////////////////////////// Definition of PBINDs ////////////////////////////////////////////
 
-Pdef(\high, Pbind(\tempo, Pdefn(\harpBeat) ,\instrument, Pdefn(\inst1), \note, Pdefn(\noteseq), \dur, 2, \ctranspose, 12, \amp, Pdefn(\harpVolumeHigh)));
+Pdef(\high, Pbind(\tempo, Pdefn(\harpBeat) ,\instrument, Pdefn(\inst1), \note, Pdefn(\noteseq), \dur, 2, \ctranspose, Pdefn(\highPitch), \amp, Pdefn(\harpVolumeHigh)));
 
-Pdef(\medium, Pbind(\tempo, Pdefn(\harpBeat) ,\instrument, Pdefn(\inst2), \note, Pdefn(\noteseq), \dur, 4, \amp, Pdefn(\harpVolumeMedium)));
+Pdef(\medium, Pbind(\tempo, Pdefn(\harpBeat) ,\instrument, Pdefn(\inst2), \note, Pdefn(\noteseq), \dur, 4, \ctranspose, Pdefn(\mediumPitch), \amp, Pdefn(\harpVolumeMedium)));
 
-Pdef(\low, Pbind(\tempo, Pdefn(\harpBeat) ,\instrument, Pdefn(\inst3), \note, Pdefn(\noteseq), \dur, 8, \ctranspose, -24, \amp, Pdefn(\harpVolumeLow)));
+Pdef(\low, Pbind(\tempo, Pdefn(\harpBeat) ,\instrument, Pdefn(\inst3), \note, Pdefn(\noteseq), \dur, 8, \ctranspose, Pdefn(\lowPitch), \amp, Pdefn(\harpVolumeLow)));
 
 Pdef(\drumKick, Pbind(\tempo, Pdefn(\harpBeat), \instrument, \kick, \dur, Pdefn(\seqKick), \amp, Pdefn(\drumVolume)));
 Pdef(\drumSnare, Pbind(\tempo, Pdefn(\harpBeat), \instrument, \snare, \dur, Pdefn(\seqSnare), \amp, Pdefn(\drumVolume)));
@@ -341,7 +348,7 @@ Pdef(\drumClap, Pbind(\tempo, Pdefn(\harpBeat), \instrument, \clap, \dur, Pdefn(
 						145, {
 							~beat = ~val2/11;
 							Pdefn(\harpBeat, ~beat);
-						},/*
+						},
 						146, {/*vol batteria*/},
 						147, {
 							~volumeMedium = ~val2/255;
@@ -351,9 +358,11 @@ Pdef(\drumClap, Pbind(\tempo, Pdefn(\harpBeat), \instrument, \clap, \dur, Pdefn(
 							~volumeMedium.postln;  //DEBUG
 							~volumeLow.postln;  //DEBUG
 							~processing.sendMsg("/harpVolume", ~val2);
-						}
-*/
+						},
+						148, {
+							///////Pitch/////
 
+						}
 					);
 				},{
 					if (((~val1 > 127) && (~val1 < 144)), {
@@ -392,6 +401,37 @@ Pdef(\drumClap, Pbind(\tempo, Pdefn(\harpBeat), \instrument, \clap, \dur, Pdefn(
 	}.loop;}
 ).play;
 
+/////////////////////////////////////////////////////  OSC messages ///////////////////////////////////////////////
+
+OSCdef(\DrumLength, {
+	arg msg;
+	if ((~kickSeq.size > (u)), {
+		for (~kickSeq.size-1, u, {
+			arg i;
+			~kickSeq.removeAt(i);
+			~snareSeq.removeAt(i);
+			~hihatSeq.removeAt(i);
+			~clapSeq.removeAt(i);
+			Pdefn(\seqKick,  Pseq(~kickSeq, inf));
+			Pdefn(\seqSnare, Pseq(~snareSeq, inf));
+			Pdefn(\seqHihat, Pseq(~hihatSeq, inf));
+			Pdefn(\seqClap,  Pseq(~clapSeq, inf));
+		});
+	});
+	if ((~kickSeq.size < (u)), {
+		for (~kickSeq.size, u, {
+			arg i;
+			~kickSeq.add(Rest(4));
+			~snareSeq.add(Rest(4));
+			~hihatSeq.add(Rest(4));
+			~clapSeq.add(Rest(4));
+			Pdefn(\seqKick,  Pseq(~kickSeq, inf));
+			Pdefn(\seqSnare, Pseq(~snareSeq, inf));
+			Pdefn(\seqHihat, Pseq(~hihatSeq, inf));
+			Pdefn(\seqClap,  Pseq(~clapSeq, inf));
+		});
+	});
+}, "/seqLenght");
 
 // OSCdef(\snap, {
 // 	arg msg;
@@ -414,7 +454,8 @@ Pdefn(\noteseq, Pseq([0, 2, 4, 5], inf));
 Pdef(\high).play;
 Pdef(\medium).play;
 Pdef(\low).play;
-
+)
+(
 Pdef(\drumKick).play;
 Pdef(\drumSnare).play;
 Pdef(\drumHihat).play;
@@ -431,17 +472,40 @@ Pdefn(\seqKick,  Pseq(~kickSeq, inf));
 Pdefn(\seqSnare, Pseq(~snareSeq, inf));
 Pdefn(\seqHihat, Pseq(~hihatSeq, inf));
 Pdefn(\seqClap,  Pseq(~clapSeq, inf));
-
 )
 
 /////////////////////////////////////////////////////////////////////////////////////////////
-~getValues.stop;
-
-NetAddr.localAddr
-Synth(\kick);
-Synth(\snare);
-Synth(\hihat);
-Synth(\clap);
 
 
-Pdefn(\inst3, \bup)
+
+(
+OSCdef(\DrumLength, {
+	arg msg;
+	if ((~kickSeq.size > (u)), {
+		for (~kickSeq.size-1, u, {
+			arg i;
+			~kickSeq.removeAt(i);
+			~snareSeq.removeAt(i);
+			~hihatSeq.removeAt(i);
+			~clapSeq.removeAt(i);
+			Pdefn(\seqKick,  Pseq(~kickSeq, inf));
+			Pdefn(\seqSnare, Pseq(~snareSeq, inf));
+			Pdefn(\seqHihat, Pseq(~hihatSeq, inf));
+			Pdefn(\seqClap,  Pseq(~clapSeq, inf));
+		});
+	});
+	if ((~kickSeq.size < (u)), {
+		for (~kickSeq.size, u, {
+			arg i;
+			~kickSeq.add(Rest(4));
+			~snareSeq.add(Rest(4));
+			~hihatSeq.add(Rest(4));
+			~clapSeq.add(Rest(4));
+			Pdefn(\seqKick,  Pseq(~kickSeq, inf));
+			Pdefn(\seqSnare, Pseq(~snareSeq, inf));
+			Pdefn(\seqHihat, Pseq(~hihatSeq, inf));
+			Pdefn(\seqClap,  Pseq(~clapSeq, inf));
+		});
+	});
+}, "/seqLenght");
+)
