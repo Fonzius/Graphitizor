@@ -78,8 +78,7 @@ void loop() {
 
   for(int i = 0; i < 12; i++){
 
-    if(i<5
-    )
+    if(i<5)
       newReadPin[i] = !digitalRead(i+2);
     //Serial.println(newReadPin[i]);
     //delay(500);
