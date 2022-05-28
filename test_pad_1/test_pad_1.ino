@@ -94,7 +94,6 @@ void loop() {
   }
 
   //ANALOG READINGS
-
   //ANALOG INPUT
   newReadTempo = analogRead(TEMPO_PIN);
   newReadDrumVolume = analogRead(DRUM_VOLUME_PIN);
@@ -164,6 +163,7 @@ void loop() {
 
 void midiMsg(int cmd, int pitch, int velocity) {
   //Serial.print('z'); // z = midi message start
+
   Serial.print(cmd); 
   Serial.print('a'); // a = fine command
   Serial.print(pitch);
@@ -171,4 +171,5 @@ void midiMsg(int cmd, int pitch, int velocity) {
   Serial.print(velocity);
   Serial.print('c'); // c = fine velocity e fine midi message
   Serial.println(' ');
+
 }

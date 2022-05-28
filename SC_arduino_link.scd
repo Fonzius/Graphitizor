@@ -1,13 +1,19 @@
 s.reboot;
-
 s.latency=0.2;
-
 SerialPort.devices;
 ~port = SerialPort.new("COM3", 115200);
 
 (
 
 //////////////////////////////////////// SYNTHDEFS Block /////////////////////////////////////////
+SynthDef(\silence, {
+	|gate = 1|
+	var env, snd;
+	env = Env.adsr(0.5, 3, 1, 0.2).kr(doneAction:2, gate: gate);
+	snd = 0 * env;
+	Out.ar([0,1], snd);
+}).add;
+
 
 SynthDef(\kick, {
     |out = 0, pan = 0, amp = 2|
@@ -16,22 +22,17 @@ SynthDef(\kick, {
     var click, clickAmp;
     var snd;
 
-    // body starts midrange, quickly drops down to low freqs, and trails off
+
     bodyFreq = EnvGen.ar(Env([261, 120, 51], [0.035, 0.08]));
     bodyAmp = EnvGen.ar(Env.linen(0.005, 0.1, 0.3), doneAction: 2);
     body = SinOsc.ar(bodyFreq) * bodyAmp;
-    // pop sweeps over the midrange
     popFreq = XLine.kr(750, 261, 0.02);
     popAmp = EnvGen.ar(Env.linen(0.001, 0.02, 0.001)) * 0.15;
     pop = SinOsc.ar(popFreq) * popAmp;
-    // click is spectrally rich, covering the high-freq range
-    // you can use Formant, FM, noise, whatever
 	clickAmp = EnvGen.ar(Env.perc(0.001, 0.01)) * 0.15;
     click = LPF.ar(Formant.ar(910, 4760, 2110), 3140) * clickAmp;
-
     snd = body + pop + click;
     snd = snd.tanh;
-
     Out.ar(out, Pan2.ar(snd, pan, amp));
 }).add;
 
@@ -42,42 +43,43 @@ SynthDef(\snare, {
     var noise, noiseAmp;
     var snd;
 
-    // pop makes a click coming from very high frequencies
-    // slowing down a little and stopping in mid-to-low
     popFreq = EnvGen.ar(Env([3261, 410, 160], [0.005, 0.01], curve: \exp));
     popAmp = EnvGen.ar(Env.perc(0.001, 0.11)) * 0.7;
     pop = SinOsc.ar(popFreq) * popAmp;
-    // bandpass-filtered white noise
     noiseAmp = EnvGen.ar(Env.perc(0.001, 0.15), doneAction: 2);
     noise = BPF.ar(WhiteNoise.ar, 810, 1.6) * noiseAmp;
-
     snd = (pop + noise) * 1.3;
-
     Out.ar(out, Pan2.ar(snd, pan, amp));
 }).add;
 
 
-SynthDef(\hihat, {
-    |out = 0, pan = 0, amp = 0.9|
-    var click, clickAmp;
-    var noise, noiseAmp;
-    var snd;
-
-    // noise -> resonance -> expodec envelope
-    noiseAmp = EnvGen.ar(Env.perc(0.001, 0.3, curve: -8), doneAction: 2);
-    noise = Mix(BPF.ar(ClipNoise.ar, [4010, 4151], [0.15, 0.56], [1.0, 0.6])) * 0.7 * noiseAmp;
-
-    snd = noise;
-
-    Out.ar(out, Pan2.ar(snd, pan, amp));
+// Not techno but sounds good to me
+SynthDef(\hihat, {arg out = 0, amp = 0.5, att = 0.01, rel = 0.2, ffreq = 6000, pan = 0;
+	var env, snd;
+	env = Env.perc(att, rel, amp).kr(doneAction: 2);
+	snd = WhiteNoise.ar;
+	snd = HPF.ar(in: snd, freq: ffreq, mul: env);
+	Out.ar(out, Pan2.ar(snd, pan));
 }).add;
 
-// adapted from a post by Neil Cosgrove (other three are original)
+// SynthDef(\hihat, {
+// 	|out = 0, pan = 0, amp = 0.9|
+// 	var click, clickAmp;
+// 	var noise, noiseAmp;
+// 	var snd;
+//
+//
+// 	noiseAmp = EnvGen.ar(Env.perc(0.001, 0.3, curve: -8), doneAction: 2);
+// 	noise = Mix(BPF.ar(ClipNoise.ar, [4010, 4151], [0.15, 0.56], [1.0, 0.6])) * 0.7 * noiseAmp;
+// 	snd = noise;
+// 	Out.ar(out, Pan2.ar(snd, pan, amp));
+// }).add;
+
+
 SynthDef(\clap, {
     |out = 0, amp = 0.9, pan = 0, dur = 1|
     var env1, env2, snd, noise1, noise2;
 
-    // noise 1 - 4 short repeats
     env1 = EnvGen.ar(
         Env.new(
             [0, 1, 0, 0.9, 0, 0.7, 0, 0.5, 0],
@@ -91,7 +93,6 @@ SynthDef(\clap, {
     noise1 = LPF.ar(noise1, XLine.kr(7200, 4000, 0.03));
     noise1 = BPF.ar(noise1, 1620, 3);
 
-    // noise 2 - 1 longer single
     env2 = EnvGen.ar(Env.new([0, 1, 0], [0.02, 0.18], [0, -4]), doneAction:2);
 
     noise2 = WhiteNoise.ar(env2);
@@ -108,13 +109,13 @@ SynthDef(\clap, {
 
 
 SynthDef(\bass, { arg freq = 440, amp = 0.5, gate = 1;
-	var snd, env, oscfreq, output;
+	var snd, envAmp, envFreq, oscfreq, output;
 	oscfreq = {freq * LFNoise2.kr(0.5).range(0.98, 1.02)}!3;
 	snd = Splay.ar(LFSaw.ar(oscfreq));
-	env = Env.adsr(0.7, 4, 0, 0.1).kr(doneAction:2, gate: gate);
-	snd = snd;
-	output = LPF.ar(snd, (env*freq) + 2*freq);
-	Out.ar(0, output*amp);
+	envFreq = Env.adsr(0.7, 4, 0, 0.1).kr(doneAction:2, gate: gate);
+	envAmp = Env.adsr(0.5, 3, 1, 0.2).kr(doneAction:2, gate: gate);
+	output = LPF.ar(envAmp*snd, (envFreq*freq) + 1.2*freq);
+	Out.ar([0,1], output * amp);
 }).add;
 
 
@@ -129,39 +130,167 @@ SynthDef(\pluck, {arg outbus=0, freq=440, filter=3, amp=1,coef=0.5,dur=2,legato=
 }).add;
 
 
-e= Array.new(7);
-e.add(Scale.ionian.degrees);
-e.add(Scale.dorian.degrees);
-e.add(Scale.phrygian.degrees);
-e.add(Scale.lydian.degrees);
-e.add(Scale.mixolydian.degrees);
-e.add(Scale.aeolian.degrees);
-e.add(Scale.locrian.degrees);
-e.add(Scale.minor.degrees);
+SynthDef(\rhodes, {
+    |out = 0, freq = 440, gate = 1, pan = 0, amp = 0.1,
+    // all of these range from 0 to 1
+    vel = 0.8, modIndex = 0.2, mix = 0.2, lfoSpeed = 0.4, lfoDepth = 0.1|
+    var env1, env2, env3, env4;
+    var osc1, osc2, osc3, osc4, snd;
+
+    lfoSpeed = lfoSpeed * 12;
+
+    freq = freq * 2;
+
+    env1 = EnvGen.ar(Env.adsr(0.001, 1.25, 0.0, 0.04, curve: \lin));
+    env2 = EnvGen.ar(Env.adsr(0.001, 1.00, 0.0, 0.04, curve: \lin));
+    env3 = EnvGen.ar(Env.adsr(0.001, 1.50, 0.0, 0.04, curve: \lin));
+    env4 = EnvGen.ar(Env.adsr(0.001, 1.50, 0.0, 0.04, curve: \lin));
+
+    osc4 = SinOsc.ar(freq * 0.5) * 2pi * 2 * 0.535887 * modIndex * env4 * vel;
+    osc3 = SinOsc.ar(freq, osc4) * env3 * vel;
+    osc2 = SinOsc.ar(freq * 15) * 2pi * 0.108819 * env2 * vel;
+    osc1 = SinOsc.ar(freq, osc2) * env1 * vel;
+    snd = Mix((osc3 * (1 - mix)) + (osc1 * mix));
+    snd = snd * (SinOsc.ar(lfoSpeed) * lfoDepth + 1);
+
+    snd = snd/2 * EnvGen.ar(Env.asr(0, 1, 0.1), gate, doneAction: 2);
+
+    Out.ar(out, snd*amp);
+}).add;
+
+
+SynthDef(\bup, {
+	arg out=0,freq=440,ffreq=440,famp=1,fq=1,
+	    fatk = 0.01, fdec = 0.1,
+	    aatk = 0.01, adec = 0.1,
+	    amp=0.5,gate=1, len=0.2,lag=0.1;
+
+	var synth,ampEnv,filtEnv;
+
+	filtEnv = EnvGen.kr(
+		       Env.adsr(fatk,fdec,releaseTime:0.05),
+                       gate,
+		       freq*famp,
+		       ffreq);
+	ampEnv = EnvGen.kr(
+		       Env.adsr(aatk,adec,releaseTime:0.05),
+		       gate,
+                       doneAction:2);
+	synth = Mix.new([
+		LFSaw.ar(Lag.kr([freq*2,freq],lag),[0,pi],amp),
+		LFTri.ar(Lag.kr([freq,freq*2],lag),[pi,0],amp)
+	]);
+	synth = Pan2.ar(synth) * ampEnv;
+	synth = RLPF.ar(synth,filtEnv,fq);
+	Out.ar(out,synth);
+}).add;
+
+
+
+SynthDef(\violin, {
+	| midinote=60, gate=1, amp=0.25 |
+	var env = EnvGen.kr(Env.asr(0.1, 1, 0.1), gate, doneAction:2);
+	var sig = VarSaw.ar(
+		midinote.midicps,
+		width:LFNoise2.kr(1).range(0.2, 0.8)*SinOsc.kr(5, Rand(0.0, 1.0)).range(0.7,0.8))*0.25;
+	sig = sig * env * amp;
+	Out.ar(0, sig!2);
+}).add;
+
+
+
+
+SynthDef(\MoaningDialogue, {
+	|rateL = 0.2, rateR = 0.3, freq = 2, feedback = 50, mul = 1 , lpfreq = 2500, gate = 1|
+	var env;
+	env = Env.adsr(0.1, 3, 1, 0.1).kr(doneAction:2, gate: gate);
+	Out.ar(0,
+		FreeVerb.ar(
+			BLowPass.ar(
+				SinOscFB.ar(
+					LFDNoise1.kr([rateL, rateR], freq), feedback;
+				, mul),
+				lpfreq,
+				0.2,
+				env
+			),
+			0.3, // dry/wet
+			0.0 //room
+		)
+	)}
+).add;
+
+SynthDef("synth", { arg freq = 440, amp = 0.1, att = 0.1, rel = 0.7, lofreq = 1000, hifreq = 3000;
+    var env, snd;
+    env = Env.perc(
+		attackTime: att,
+		releaseTime: rel,
+		level: amp
+	).kr(doneAction: 2);
+    snd = Saw.ar(freq: freq * [0.99, 1, 1.001, 1.008], mul: env);
+	snd = LPF.ar(
+		in: snd,
+		freq: LFNoise2.kr(1).range(lofreq, hifreq)
+	);
+    snd = Splay.ar(snd);
+    Out.ar(0, snd);
+}).add;
+
+~processing = NetAddr("127.0.0.1", 12000);
 
 ~array = Array.new(15);
 ~array.add(-1);
-~volumePluck = 0;
-~volumeBass = 0;
-~reverb = 0;
 
-Pdefn(\noteseq, Pseq(~array, inf));
-Pdefn(\harpVolumePluck, ~volumePluck);
-Pdefn(\harpVolumeBass, ~volumeBass);
-Pdefn(\reverb, ~reverb);
+~volumeHigh = 0.3;
+~volumeMedium = 1;
+~volumeLow = 0.3;
+~drumVol = 0.5;
 
-Pdef(\plucked, Pbind(\tempo, 40,\instrument, \pluck, \note, Pdefn(\noteseq), \dur, 12, \amp, Pdefn(\harpVolumePluck), \delt, 0.3, \dect, 0.6, \mixrev, Pdefn(\reverb)));
-Pdef(\sawBass, Pbind(\tempo, 40,\instrument, \bass, \note, Pdefn(\noteseq), \dur, 24, \ctranspose, -24, \amp, Pdefn(\harpVolumeBass)));
+~beat = 20;
 
+~kickSeq  = [Rest(4), Rest(4), Rest(4), Rest(4), Rest(4), Rest(4), Rest(4), Rest(4)];
+~snareSeq = [Rest(4), Rest(4), Rest(4), Rest(4), Rest(4), Rest(4), Rest(4), Rest(4)];
+~hihatSeq = [Rest(4), Rest(4), Rest(4), Rest(4), Rest(4), Rest(4), Rest(4), Rest(4)];
+~clapSeq  = [Rest(4), Rest(4), Rest(4), Rest(4), Rest(4), Rest(4), Rest(4), Rest(4)];
+
+
+
+Pdefn(\inst1, \rhodes);
+Pdefn(\inst2, \pluck);
+Pdefn(\inst3, \bass);
+
+Pdefn(\harpVolumeHigh, ~volumeHigh);
+Pdefn(\harpVoluMemedium, ~volumeMedium);
+Pdefn(\harpVolumeLow, ~volumeLow);
+Pdefn(\drumVolume, ~drumVol);
+
+Pdefn(\harpBeat, ~beat);
+
+Pdefn(\seqKick,  Pseq(~kickSeq, inf));
+Pdefn(\seqSnare, Pseq(~snareSeq, inf));
+Pdefn(\seqHihat, Pseq(~hihatSeq, inf));
+Pdefn(\seqClap,  Pseq(~clapSeq, inf));
+
+////////////////////////////////////////// Definition of PBINDs ////////////////////////////////////////////
+
+Pdef(\high, Pbind(\tempo, Pdefn(\harpBeat) ,\instrument, Pdefn(\inst1), \note, Pdefn(\noteseq), \dur, 2, \ctranspose, 12, \amp, Pdefn(\harpVolumeHigh)));
+
+Pdef(\medium, Pbind(\tempo, Pdefn(\harpBeat) ,\instrument, Pdefn(\inst2), \note, Pdefn(\noteseq), \dur, 4, \amp, Pdefn(\harpVolumeMedium)));
+
+Pdef(\low, Pbind(\tempo, Pdefn(\harpBeat) ,\instrument, Pdefn(\inst3), \note, Pdefn(\noteseq), \dur, 8, \ctranspose, -24, \amp, Pdefn(\harpVolumeLow)));
+
+Pdef(\drumKick, Pbind(\tempo, Pdefn(\harpBeat), \instrument, \kick, \dur, Pdefn(\seqKick), \amp, Pdefn(\drumVolume)));
+Pdef(\drumSnare, Pbind(\tempo, Pdefn(\harpBeat), \instrument, \snare, \dur, Pdefn(\seqSnare), \amp, Pdefn(\drumVolume)));
+Pdef(\drumHihat, Pbind(\tempo, Pdefn(\harpBeat), \instrument, \hihat, \dur, Pdefn(\seqHihat), \amp, Pdefn(\drumVolume)));
+Pdef(\drumClap, Pbind(\tempo, Pdefn(\harpBeat), \instrument, \clap, \dur, Pdefn(\seqClap), \amp, Pdefn(\drumVolume)));
 )
+
 
 
 (
 /////////////////////////////////////////////// ROUTINE ////////////////////////////////////////////////
-
 ~charArray = [0];
 ~flag = 0;
-~oldVal1 = 0;
 ~getValues = Routine.new(
 	{ var ascii;
 		{ ascii = ~port.read.asAscii;
@@ -188,51 +317,73 @@ Pdef(\sawBass, Pbind(\tempo, 40,\instrument, \bass, \note, Pdefn(\noteseq), \dur
 				~charArray = [0];
 				if (((~val1 > 143) && (~val1 < 160)),{
 					switch(~val1,
-						144, {a = Synth.new(\kick)},
-						145, {b = Synth.new(\snare)},
-						146, {c = Synth.new(\clap)},
-						147, {d = Synth.new(\hihat)},
-						148, {
-							if ((~array[0] == -1),{
-								~array.removeAt(0);
-								~array.add(e[0][~val1%148]);
-								Pdefn(\noteseq, Pseq(~array, inf));
-								Pdef(\plucked).play;
-								Pdef(\sawBass).play;
-							},{
-								~array.add(e[0][~val1%148]);
-								Pdef(\plucked).resume;
-								Pdef(\sawBass).resume;
+						144, {
+							for(0, 12, {
+								arg i;
+								if ((~array[i] == ~val2), {~flag = 1; ~array.postln;});
 							});
+							~flag.postln;
+							if ((~flag == 0), {
+								if ((~array[0] == -1),{
+									~array.removeAt(0);
+									~array.add(~val2);
+									Pdefn(\noteseq, Pseq(~array, inf));
+									//Pdef(\high).play;
+									Pdef(\medium).play;
+									Pdef(\low).play;
+								},{
+									~array.add(~val2);
+									Pdefn(\noteseq, Pseq(~array, inf));
+								});
+							});
+							~flag = 0;
 						},
-						149, {
-							~volumePluck = ~val2/255;
-							~volumeBass = ~val2/700;
-							Pdefn(\harpVolumePluck, ~volumePluck);
-							Pdefn(\harpVolumeBass, ~volumeBass);
-							~volumePluck.postln;  //DEBUG
-							~volumeBass.postln;  //DEBUG
-					});
+						145, {
+							~beat = ~val2/11;
+							Pdefn(\harpBeat, ~beat);
+						},/*
+						146, {/*vol batteria*/},
+						147, {
+							~volumeMedium = ~val2/255;
+							~volumeLow = ~val2/700;
+							Pdefn(\harpVolumeMedium, ~volumeMedium);
+							Pdefn(\harpVolumeLow, ~volumeLow);
+							~volumeMedium.postln;  //DEBUG
+							~volumeLow.postln;  //DEBUG
+							~processing.sendMsg("/harpVolume", ~val2);
+						}
+*/
+
+					);
 				},{
 					if (((~val1 > 127) && (~val1 < 144)), {
 						switch(~val1,
-							132, {
-								for(0, 6, {
+							128,{
+								if((~array.size == 1), {
+									~array.put(0, -1);
+									Pdef(\medium).pause;
+									Pdef(\low).pause;
+								},{for(0, 12, {
 									arg i;
-									if ((~array[i] == e[0][0]), {~array.removeAt(i)});
+									if ((~array[i] == ~val2), {
+										~array.removeAt(i);
+										Pdefn(\noteseq, Pseq(~array, inf));
+									});
 								});
-								if ((~array[0] == nil), {
-									~array.add(-1);
-									Pdef(\plucked).pause;
-									Pdef(\sawBass).pause;
-								});
-							},
+								});/*,
 							133, {
 								~volumePluck = 0;
 								~volumeBass = 0;
 								Pdefn(\harpVolumePluck, ~volumePluck);
 								Pdefn(\harpVolumeBass, ~volumeBass);
-						});
+								~processing.sendMsg("/harpVolume", ~val2);
+								}*/
+							},
+							129, {
+								~beat = 1;
+								Pdefn(\harpBeat, ~beat);
+							}
+						);
 					});
 				});
 				(' ').postln;
@@ -240,30 +391,57 @@ Pdef(\sawBass, Pbind(\tempo, 40,\instrument, \bass, \note, Pdefn(\noteseq), \dur
 			});
 	}.loop;}
 ).play;
+
+
+// OSCdef(\snap, {
+// 	arg msg;
+// 	msg[1].postln;
+// 	switch(msg[1],
+// 		0, {Pdefn(\firstDef, \violin)},
+// 		1, {Pdefn(\firstDef, \bup)},
+// 		2, {Pdefn(\secondDef, \bup)},
+// 		3, {Pdefn(\firstDef, \hihat)},
+// 		4, {Pdefn(\secondDef, \pluck)},
+// 		5, {Pdefn(\firstDef, \bass)}
+// 	);
+// }, "/snapped");
+
+)
+////////////////////////////////////////// Prove per Pbind //////////////////////////////////
+(
+Pdefn(\noteseq, Pseq([0, 2, 4, 5], inf));
+
+Pdef(\high).play;
+Pdef(\medium).play;
+Pdef(\low).play;
+
+Pdef(\drumKick).play;
+Pdef(\drumSnare).play;
+Pdef(\drumHihat).play;
+Pdef(\drumClap).play;
+
+)
+(
+~kickSeq  = [4, Rest(4), Rest(4), 4, Rest(4), 4, Rest(4), Rest(4)];
+~snareSeq = [Rest(4), 4, 4, Rest(4), Rest(4), Rest(4), 4, Rest(4)];
+~hihatSeq = [Rest(4), 4, 4, Rest(4), Rest(4), 4, Rest(4), Rest(4)];
+~clapSeq  = [Rest(4), Rest(4), Rest(4), Rest(4), 4, Rest(4), Rest(4), 4];
+
+Pdefn(\seqKick,  Pseq(~kickSeq, inf));
+Pdefn(\seqSnare, Pseq(~snareSeq, inf));
+Pdefn(\seqHihat, Pseq(~hihatSeq, inf));
+Pdefn(\seqClap,  Pseq(~clapSeq, inf));
+
 )
 
+/////////////////////////////////////////////////////////////////////////////////////////////
 ~getValues.stop;
 
-
+NetAddr.localAddr
 Synth(\kick);
 Synth(\snare);
 Synth(\hihat);
 Synth(\clap);
 
 
-// (
-// ~control = Routine.new(
-// 	{
-// 		{
-// 			if (((~val1 > 143) && (~val1 < 160)),{
-// 				a = Synth.new(\kick);// cmd = 0x9* -> noteOn
-// 			});
-// 			0.01.wait;
-// 		}.loop;
-// 	}
-// ).play;
-// )
-//
-// ~control.stop;
-
-
+Pdefn(\inst3, \bup)
