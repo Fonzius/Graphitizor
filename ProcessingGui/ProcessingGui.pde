@@ -154,7 +154,7 @@ void keyPressed(){
     firstSequencerSetup();
     
     OscMessage msg = new OscMessage("/seqLenght");
-    msg.add(numSteps-1);
+    msg.add(numSteps);
     osc.send(msg, supercollider);
   }
   else if(key == '+' && numSteps <8){
