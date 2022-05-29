@@ -5,14 +5,23 @@ import netP5.*;
 void setup(){
   size(1000,800);
   
+  font = createFont("Rocky Age.ttf", 50);
+  fontina = createFont("Rocky Age.ttf", 30);
+
+  textAlign(CENTER,CENTER);
+
   background(255);
   rectMode(CORNER);
   ellipseMode(CENTER);
   strokeJoin(ROUND);
+  imageMode(CENTER);
   
   //Setup OSC communication with Supercollider
   osc = new OscP5(this, 12000);
   supercollider = new NetAddress("127.0.0.1", 57120);
+  
+  canvasControls = loadImage("CanvasControls.png");
+  snare = loadImage("Snare.jpeg");
   
   //Setup all render styles
   setupHandyRenderers();
@@ -32,7 +41,6 @@ void draw(){
     sequencer();
   else if(mode == "assignment")
     assignment();
-
 }
 
 //Mousereleased instead of clicked because it was messing up if dragged on the pad, you'd have to be perfectly still while clicking
@@ -128,4 +136,37 @@ void keyPressed(){
       }
     }
   }
+  else if(key == '1')
+    hPencil.setStrokeWeight(10);
+  else if(key == '2')
+    hPencil.setStrokeWeight(15);
+  else if(key == '3')
+    hPencil.setStrokeWeight(20);
+  else if(key == '4')
+    hPencil.setStrokeWeight(30);
+  else if(key == '5')
+    hPencil.setStrokeWeight(50);
+  else if(key == 'e')
+    mouseColor = color(255,255,255);
+  else if(key == 'r' && mode == "sequencer"){
+    fill(255);
+    firstSequencerSetup();
+  }
+  else if(key == '-' && numSteps > 1){
+    numSteps--;
+    firstSequencerSetup();
+    
+    OscMessage msg = new OscMessage("/seqLenght");
+    msg.add(numSteps-1);
+    osc.send(msg, supercollider);
+  }
+  else if(key == '+' && numSteps <8){
+    numSteps++;
+    firstSequencerSetup();
+
+    OscMessage msg = new OscMessage("/seqLenght");
+    msg.add(numSteps);
+    osc.send(msg, supercollider);
+  }
+    
 }

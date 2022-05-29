@@ -29,16 +29,18 @@ class Pad{
 
 class ColorPad extends Pad{ 
  int r;
+ int seed;
  
- ColorPad(int x,int y){
+ ColorPad(int x,int y, color c){
    this.x = x;
    this.y = y;
-   this.c = color(random(0,255),random(0,255),random(0,255));
+   this.c = c;
    this.r = circleSize;
+   this.seed = (int)random(0,69420);
  }
  
  void show(){
-   hColorPad.setSeed(69420);
+   hColorPad.setSeed(this.seed);
    hColorPad.setFillColour(this.c);
    hColorPad.ellipse(x,y,r,r);
   }
@@ -61,24 +63,24 @@ class PaintablePad extends Pad{
   String[] instruments = {"/kick", "/snare", "/hihat", "/clap"};
   
   PaintablePad(int x, int y, int padWidth, int padHeight, int step){
-   this.x = x;
-   this.y = y;
-   this.padHeight = padHeight;
-   this.padWidth = padWidth;
+    this.x = x;
+    this.y = y;
+    this.padHeight = padHeight;
+    this.padWidth = padWidth;
    
-   this.numTotalPixels = padHeight*padWidth;
+    this.numTotalPixels = padHeight*padWidth;
    
-   this.seed = (int)random(69, 69420);
+    this.seed = (int)random(69, 69420);
    
-   this.step = step;
+    this.step = step;
    
-   this.colorAmount = new int[numColors];
-   for(int i = 0; i<numColors; i++)
-     this.colorAmount[i] = 0;
+    this.colorAmount = new int[numColors];
+    for(int i = 0; i<numColors; i++)
+      this.colorAmount[i] = 0;
      
-   this.instrumentsColor = new color[numColors];
-   for(int i = 0; i<numColors; i++)
-     this.instrumentsColor[i] = colorPad[i].getC();
+    this.instrumentsColor = new color[numColors];
+    for(int i = 0; i<numColors; i++)
+      this.instrumentsColor[i] = colorPad[i].getC();
   }
   
   void show(boolean background){
@@ -131,28 +133,27 @@ class InstrumentPad extends Pad{
   int seed;
   int snappedTo = -1;
   int r;
+  int id;
   
-  InstrumentPad(){
-    this.x = width - circleSize;
-    this.y = 200; 
-    seed = (int)random(0,69420);
-  }
-  InstrumentPad(int x, int y){
+  InstrumentPad(int x, int y, color c, int id){
     this.x = x;
     this.y = y;
     this.r = circleSize;
+    this.c = c;
     seed = (int)random(0,69420);
+    this.id = id;
   }
   
   void show(){
+    hInstrumentPad.setFillColour(this.c);
     hInstrumentPad.setSeed(this.seed);
     hInstrumentPad.ellipse(x,y,r,r);
   }
   
   void isMoved(){
     if(snappedTo!=-1){
-      OscMessage msg = new OscMessage("/snapped");
-      msg.add(-snappedTo);
+      OscMessage msg = new OscMessage("/removed");
+      msg.add(snappedTo);
       osc.send(msg, supercollider);
       
       selectionPad[snappedTo].empty();
@@ -177,6 +178,7 @@ class InstrumentPad extends Pad{
         
         OscMessage msg = new OscMessage("/snapped");
         msg.add(snappedTo);
+        msg.add(instrumentPadName[this.id]);
         osc.send(msg, supercollider);
         break;
       }
@@ -195,10 +197,11 @@ class SelectionPad extends Pad{
   int thunderDuration = 20;
 
   
-  SelectionPad(int x, int y){
+  SelectionPad(int x, int y, color c){
    this.x = x;
    this.y = y;
-   this.r = circleSize;
+   this.r = circleSize+10;
+   this.c = c;
    this.thunderDistance = dist(x,y,fiveVPad.getX(),fiveVPad.getY());
    this.setAngle();
    this.seed = (int)random(0,69420);
@@ -206,6 +209,7 @@ class SelectionPad extends Pad{
   
   void show(){
     noFill();
+    hSelectionPad.setStrokeColour(this.c);
     hSelectionPad.setSeed(this.seed);
     hSelectionPad.ellipse(x,y,r,r);
   }

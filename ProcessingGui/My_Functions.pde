@@ -18,7 +18,8 @@ void setupHandyRenderers(){
   hColorPad.setFillGap(3);
   hColorPad.setSeed(69420);
   hColorPad.setOverrideFillColour(true);
-  hColorPad.setRoughness(2);
+  hColorPad.setRoughness(1);
+  hColorPad.setStrokeWeight(2);
   
   hPaintablePad = new HandyRenderer(this);
   hPaintablePad.setRoughness(1);
@@ -37,14 +38,9 @@ void setupHandyRenderers(){
   
   hInstrumentPad = new HandyRenderer(this);
   hInstrumentPad.setOverrideStrokeColour(true);
-  hInstrumentPad.setBackgroundColour(color(167,200,76));
   hInstrumentPad.setOverrideFillColour(true);
-  hInstrumentPad.setFillColour(color(255,0,0));
-  hInstrumentPad.setFillGap(5);
   hInstrumentPad.setStrokeWeight(3);
-  hInstrumentPad.setHachurePerturbationAngle(15);
   hInstrumentPad.setRoughness(1);
-  hInstrumentPad.setIsAlternating(true);
   hInstrumentPad.setStrokeColour(color(0));
   
   hSelectionPad = new HandyRenderer(this);
@@ -76,45 +72,57 @@ void setupClassObjects(){
   selectionPad = new SelectionPad[numSelectionPad];
   instrumentPad = new InstrumentPad[numInstrumentPad];
   
-  fiveVPad = new FiveVPad(circleSize/2+5, height/2);
+  fiveVPad = new FiveVPad(width/2, height-circleSize);
   
   float selectionRadius = width/3;
-  float angleIncrement = PI/(numSelectionPad-1);
+  float angleIncrement = (5*PI)/(6*(numSelectionPad-1));
   //Manually initialize all the assignable pads slots
   for(int j = 0; j < numSelectionPad; j++)
-   selectionPad[j] = new SelectionPad((int)(circleSize+selectionRadius*cos(PI/2-j*angleIncrement)),(int)(height/2+selectionRadius*sin(PI/2-j*angleIncrement)));
-  
+   selectionPad[j] = new SelectionPad((int)(fiveVPad.getX()+selectionRadius*cos((13*PI/12)+j*angleIncrement)),(int)(fiveVPad.getY()+selectionRadius*sin((13*PI/12)+j*angleIncrement)), selectionColor[j]);
   
   for(int j = 0; j<numInstrumentPad; j++)
-   instrumentPad[j] = new InstrumentPad((int)(width-circleSize), (int)(height/2 + random(-200,200)));
+   instrumentPad[j] = new InstrumentPad(circleSize+j*(width-circleSize)/numInstrumentPad, circleSize, instrumentColor[j], j);
 
   //Initialize class objects
   colorPad = new ColorPad[numColors];
   for(int j = 0; j<numColors; j++)
-    colorPad[j] = new ColorPad(j*width/4+circleSize, circleSize + 10);
+    colorPad[j] = new ColorPad(j*width/4+circleSize, circleSize + 10, drumsColor[j]);
     
   paintPad = new PaintablePad[numSteps];
   for(int i = 0; i<numSteps;i++){
     paintPad[i] = new PaintablePad(i*width/8,height/2,width/8,height/4,i);
     paintPad[i].show(true);
-  } 
+  }
 }
-
 void firstSequencerSetup(){
   background(255);
   hBackground.rect(5,5,width-5,height-5);
   for(int j = 0; j<numColors; j++)
     colorPad[j].show();
-  for(int i = 0; i<numSteps;i++)
+    
+  for(int i = 0; i<numSteps;i++){
+    paintPad[i] = new PaintablePad(i*width/numSteps,height/2,width/numSteps,height/4,i);
     paintPad[i].show(true);
+  } 
     
   saveSequencerScreen();
 }
 void sequencer(){
   for(int j = 0; j<numColors; j++)
     colorPad[j].show();
-  for(int i = 0; i<numSteps;i++)
+    
+  for(int i = 0; i<numSteps;i++){
     paintPad[i].show(false);
+  }
+  
+  fill(0);
+  textFont(font);
+  text("Kick", colorPad[0].getX(), colorPad[0].getY()+2*circleSize/3);
+  text("Snare", colorPad[1].getX(), colorPad[1].getY()+2*circleSize/3);
+  text("Hihat", colorPad[2].getX(), colorPad[2].getY()+2*circleSize/3);
+  text("Clap", colorPad[3].getX(), colorPad[3].getY()+2*circleSize/3);
+  
+  text("<- Assignment View", 330, height-40);
 }
 
 void saveSequencerScreen(){
@@ -142,6 +150,13 @@ void assignment(){
   }
   fill(255);
       
-  for(int j = 0; j<numInstrumentPad; j++)
+  for(int j = 0; j<numInstrumentPad; j++){
     instrumentPad[j].show();
+    fill(0);
+    textFont(fontina);
+    text(instrumentPadName[j],instrumentPad[j].getX(), instrumentPad[j].getY());
+  }
+  
+  textFont(font);
+  text("Sequencer View ->", width-330, height-40);
 }
