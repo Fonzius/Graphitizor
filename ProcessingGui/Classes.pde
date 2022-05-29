@@ -178,7 +178,7 @@ class InstrumentPad extends Pad{
         
         OscMessage msg = new OscMessage("/snapped");
         msg.add(snappedTo);
-        msg.add(instrumentPadName[this.id]);
+        msg.add(id);
         osc.send(msg, supercollider);
         break;
       }
