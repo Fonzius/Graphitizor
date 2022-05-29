@@ -52,7 +52,7 @@ void setupHandyRenderers(){
   hThunder = HandyPresets.createPencil(this);
   hThunder.setRoughness(5);
   hThunder.setStrokeWeight(5);
-  hThunder.setStrokeColour(color(0,0,255));
+  hThunder.setStrokeColour(color(0,0,255,100));
   
   hFiveVPad = new HandyRenderer(this);
   hFiveVPad.setOverrideStrokeColour(true);

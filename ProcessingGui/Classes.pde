@@ -195,16 +195,18 @@ class SelectionPad extends Pad{
   float thunderDistance;
   int thunderTime = 0;
   int thunderDuration = 20;
+  
+  int intensity = 100;
 
   
   SelectionPad(int x, int y, color c){
-   this.x = x;
-   this.y = y;
-   this.r = circleSize+10;
-   this.c = c;
-   this.thunderDistance = dist(x,y,fiveVPad.getX(),fiveVPad.getY());
-   this.setAngle();
-   this.seed = (int)random(0,69420);
+    this.x = x;
+    this.y = y;
+    this.r = circleSize+10;
+    this.c = c;
+    this.thunderDistance = dist(x,y,fiveVPad.getX(),fiveVPad.getY());
+    this.setAngle();
+    this.seed = (int)random(0,69420);  
   }
   
   void show(){
@@ -242,6 +244,8 @@ class SelectionPad extends Pad{
     }
   }
   void thunder(){
+    
+    hThunder.setStrokeColour(color(0,0,255,this.intensity));
   
     int tLenght = thunderDuration/2; 
     
@@ -277,6 +281,10 @@ class SelectionPad extends Pad{
    else
      this.thunderTime = 0;
   } 
+  
+  void setIntensity(int intensity){
+    this.intensity = intensity;
+  }
 }
 
 class FiveVPad extends Pad{

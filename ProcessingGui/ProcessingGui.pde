@@ -165,5 +165,16 @@ void keyPressed(){
     msg.add(numSteps);
     osc.send(msg, supercollider);
   }
-    
+}
+
+void oscEvent(OscMessage msg){
+ if(msg.checkAddrPattern("/volumeHigh")){
+   selectionPad[2].setIntensity(msg.get(0).intValue());
+ }
+ if(msg.checkAddrPattern("/volumeLow")){
+   selectionPad[0].setIntensity(msg.get(0).intValue());
+ }
+ if(msg.checkAddrPattern("/volumeMed")){
+   selectionPad[1].setIntensity(msg.get(0).intValue());
+ }
 }
