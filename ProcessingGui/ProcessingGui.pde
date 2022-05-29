@@ -20,9 +20,6 @@ void setup(){
   osc = new OscP5(this, 12000);
   supercollider = new NetAddress("127.0.0.1", 57120);
   
-  canvasControls = loadImage("CanvasControls.png");
-  snare = loadImage("Snare.jpeg");
-  
   //Setup all render styles
   setupHandyRenderers();
   //Object declarations

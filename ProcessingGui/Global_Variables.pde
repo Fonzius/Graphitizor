@@ -5,8 +5,6 @@ int numInstrumentPad = 6;
 
 String mode = "sequencer";
 PImage sequencerScreenBackup;
-PImage canvasControls;
-PImage snare;
 PFont font;
 PFont fontina;
 
