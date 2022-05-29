@@ -106,6 +106,7 @@ void firstSequencerSetup(){
   } 
     
   saveSequencerScreen();
+  sendPixelInformation();
 }
 void sequencer(){
   for(int j = 0; j<numColors; j++)
