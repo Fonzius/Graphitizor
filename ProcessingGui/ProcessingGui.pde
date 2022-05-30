@@ -151,19 +151,22 @@ void keyPressed(){
   }
   else if(key == '-' && numSteps > 1){
     numSteps--;
-    firstSequencerSetup();
     
     OscMessage msg = new OscMessage("/seqLenght");
     msg.add(numSteps);
     osc.send(msg, supercollider);
+    
+    firstSequencerSetup();
   }
   else if(key == '+' && numSteps <8){
     numSteps++;
-    firstSequencerSetup();
 
     OscMessage msg = new OscMessage("/seqLenght");
     msg.add(numSteps);
     osc.send(msg, supercollider);
+    
+    firstSequencerSetup();
+
   }
 }
 

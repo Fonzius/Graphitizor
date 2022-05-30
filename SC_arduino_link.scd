@@ -367,7 +367,7 @@ Pdef(\drumClap, Pbind(\tempo, Pdefn(\arpBeat), \instrument, \clap, \dur, Pdefn(\
 							Pdefn(\arpVolumeHigh, ~volumeHigh);
 							~processing.sendMsg("/volumeHigh", ~val2);
 						},
-						/*148, {
+						148, {
 							/// ARP MED VOLUME ///
 							~volumeMedium = ~val2/255;
 							Pdefn(\arpVolumeMedium, ~volumeMedium);
@@ -378,7 +378,7 @@ Pdef(\drumClap, Pbind(\tempo, Pdefn(\arpBeat), \instrument, \clap, \dur, Pdefn(\
 							~volumeLow = ~val2/255;
 							Pdefn(\arpVolumeLow, ~volumeLow);
 							~processing.sendMsg("/volumeLow", ~val2);
-						},*/
+						},
 						148, {
 							/// PITCH ///
 							~pitchHigh = 12 + ((~val2/23.18).round);
@@ -423,7 +423,7 @@ Pdef(\drumClap, Pbind(\tempo, Pdefn(\arpBeat), \instrument, \clap, \dur, Pdefn(\
 								Pdefn(\arpVolumeHigh, ~volumeHigh);
 								~processing.sendMsg("/volumeHigh", 0);
 							},
-							/*132, {
+							132, {
 								~volumeMedium = 0;
 								Pdefn(\arpVolumeMedium, ~volumeMedium);
 								~processing.sendMsg("/volumeMed", 0);
@@ -432,7 +432,7 @@ Pdef(\drumClap, Pbind(\tempo, Pdefn(\arpBeat), \instrument, \clap, \dur, Pdefn(\
 								~volumeLow = ~val2/255;
 								Pdefn(\arpVolumeLow, ~volumeLow);
 								~processing.sendMsg("/volumeLow", ~val2);
-							},*/
+							},
 							132, {
 								~pitchHigh = 12;
 								~pitchMedium = 0;
@@ -489,10 +489,10 @@ OSCdef(\DrumLength, {
 			~snareSeq.add(4);
 			~hihatSeq.add(4);
 			~clapSeq.add(4);
-			~kickAmp.add(0);
-			~snareAmp.add(0);
-			~hihatAmp.add(0);
-			~clapAmp.add(0);
+			~kickAmp.add(0.0);
+			~snareAmp.add(0.0);
+			~hihatAmp.add(0.0);
+			~clapAmp.add(0.0);
 			Pdefn(\seqKick,  Pseq(~kickSeq, inf));
 			Pdefn(\seqSnare, Pseq(~snareSeq, inf));
 			Pdefn(\seqHihat, Pseq(~hihatSeq, inf));
@@ -641,28 +641,28 @@ OSCdef(\removed, {
 
 OSCdef(\kickVol, {
 	arg msg;
-	~kickAmp.put(msg[1], msg[2]);
+	~kickAmp.put(msg[1], (msg[2] * ~drumVol *2));
 	Pdefn(\kickVolume, Pseq(~kickAmp, inf));
 	("kick cambiato").postln;
 }, "/kick");
 
 OSCdef(\snareVol, {
 	arg msg;
-	~snareAmp.put(msg[1], msg[2]);
+	~snareAmp.put(msg[1], (msg[2] * ~drumVol);
 	Pdefn(\snareVolume, Pseq(~snareAmp, inf));
 	("snare cambiato").postln;
 }, "/snare");
 
 OSCdef(\hihatVol, {
 	arg msg;
-	~hihatAmp.put(msg[1], msg[2]);
+	~hihatAmp.put(msg[1], (msg[2] * ~drumVol));
 	Pdefn(\hihatVolume, Pseq(~hihatAmp, inf));
 	("hihat cambiato").postln;
 }, "/hihat");
 
 OSCdef(\clapVol, {
 	arg msg;
-	~clapAmp.put(msg[1], msg[2]);
+	~clapAmp.put(msg[1], (msg[2] * ~drumVol));
 	Pdefn(\clapVolume, Pseq(~clapAmp, inf));
 	("clap cambiato").postln;
 }, "/clap");
@@ -740,13 +740,6 @@ Pdef(\drumKick).play;
 
 
 
-
-
-
-
-
-
-
 (
 OSCdef(\DrumLength, {
 	/// VARIATION OF LENGTH OF THE MEASURE ///
@@ -776,14 +769,6 @@ OSCdef(\DrumLength, {
 			Pdefn(\snareVolume, Pseq(~snareAmp, inf));
 			Pdefn(\hihatVolume, Pseq(~hihatAmp, inf));
 			Pdefn(\clapVolume, Pseq(~clapAmp, inf));
-			~kickSeq.postln;
-			~snareSeq.postln;
-			~hihatSeq.postln;
-			~clapSeq.postln;
-			~kickAmp.postln;
-			~snareAmp.postln;
-			~hihatAmp.postln;
-			~clapAmp.postln;
 		});
 	});
 	if ((~kickSeq.size < (msg[1])), {
@@ -793,10 +778,10 @@ OSCdef(\DrumLength, {
 			~snareSeq.add(4);
 			~hihatSeq.add(4);
 			~clapSeq.add(4);
-			~kickAmp.add(0);
-			~snareAmp.add(0);
-			~hihatAmp.add(0);
-			~clapAmp.add(0);
+			~kickAmp.add(0.0);
+			~snareAmp.add(0.0);
+			~hihatAmp.add(0.0);
+			~clapAmp.add(0.0);
 			Pdefn(\seqKick,  Pseq(~kickSeq, inf));
 			Pdefn(\seqSnare, Pseq(~snareSeq, inf));
 			Pdefn(\seqHihat, Pseq(~hihatSeq, inf));
@@ -805,111 +790,6 @@ OSCdef(\DrumLength, {
 			Pdefn(\snareVolume, Pseq(~snareAmp, inf));
 			Pdefn(\hihatVolume, Pseq(~hihatAmp, inf));
 			Pdefn(\clapVolume, Pseq(~clapAmp, inf));
-			~kickSeq.postln;
-			~snareSeq.postln;
-			~hihatSeq.postln;
-			~clapSeq.postln;
-			~kickAmp.postln;
-			~snareAmp.postln;
-			~hihatAmp.postln;
-			~clapAmp.postln;
-		});
-	});
-}, "/seqLenght");
-
-OSCdef(\kickVol, {
-	arg msg;
-	~kickAmp.put(msg[1], msg[2]);
-	Pdefn(\kickVolume, Pseq(~kickAmp, inf));
-	("kick cambiato").postln;
-}, "/kick");
-
-OSCdef(\snareVol, {
-	arg msg;
-	~snareAmp.put(msg[1], msg[2]);
-	Pdefn(\snareVolume, Pseq(~snareAmp, inf));
-	("snare cambiato").postln;
-}, "/snare");
-
-OSCdef(\hihatVol, {
-	arg msg;
-	~hihatAmp.put(msg[1], msg[2]);
-	Pdefn(\hihatVolume, Pseq(~hihatAmp, inf));
-	("hihat cambiato").postln;
-}, "/hihat");
-
-OSCdef(\clapVol, {
-	arg msg;
-	~clapAmp.put(msg[1], msg[2]);
-	Pdefn(\clapVolume, Pseq(~clapAmp, inf));
-	("clap cambiato").postln;
-}, "/clap");
-
-OSCdef(\DrumLength, {
-	/// VARIATION OF LENGTH OF THE MEASURE ///
-	// msg[1] goes from 1 to 8
-	arg msg;
-	(' ').postln;
-	(' ').postln;
-	msg[1].postln;
-	(' ').postln;
-	(' ').postln;
-	if ((~kickSeq.size > (msg[1])), {
-		for (~kickSeq.size-1, msg[1], {
-			arg i;
-			~kickSeq.removeAt(i);
-			~snareSeq.removeAt(i);
-			~hihatSeq.removeAt(i);
-			~clapSeq.removeAt(i);
-			~kickAmp.removeAt(i);
-			~snareAmp.removeAt(i);
-			~hihatAmp.removeAt(i);
-			~clapAmp.removeAt(i);
-			Pdefn(\seqKick,  Pseq(~kickSeq, inf));
-			Pdefn(\seqSnare, Pseq(~snareSeq, inf));
-			Pdefn(\seqHihat, Pseq(~hihatSeq, inf));
-			Pdefn(\seqClap,  Pseq(~clapSeq, inf));
-			Pdefn(\kickVolume, Pseq(~kickAmp, inf));
-			Pdefn(\snareVolume, Pseq(~snareAmp, inf));
-			Pdefn(\hihatVolume, Pseq(~hihatAmp, inf));
-			Pdefn(\clapVolume, Pseq(~clapAmp, inf));
-			~kickSeq.postln;
-			~snareSeq.postln;
-			~hihatSeq.postln;
-			~clapSeq.postln;
-			~kickAmp.postln;
-			~snareAmp.postln;
-			~hihatAmp.postln;
-			~clapAmp.postln;
-		});
-	});
-	if ((~kickSeq.size < (msg[1])), {
-		for (~kickSeq.size, msg[1]-1, {
-			arg i;
-			~kickSeq.add(4);
-			~snareSeq.add(4);
-			~hihatSeq.add(4);
-			~clapSeq.add(4);
-			~kickAmp.add(0);
-			~snareAmp.add(0);
-			~hihatAmp.add(0);
-			~clapAmp.add(0);
-			Pdefn(\seqKick,  Pseq(~kickSeq, inf));
-			Pdefn(\seqSnare, Pseq(~snareSeq, inf));
-			Pdefn(\seqHihat, Pseq(~hihatSeq, inf));
-			Pdefn(\seqClap,  Pseq(~clapSeq, inf));
-			Pdefn(\kickVolume, Pseq(~kickAmp, inf));
-			Pdefn(\snareVolume, Pseq(~snareAmp, inf));
-			Pdefn(\hihatVolume, Pseq(~hihatAmp, inf));
-			Pdefn(\clapVolume, Pseq(~clapAmp, inf));
-			~kickSeq.postln;
-			~snareSeq.postln;
-			~hihatSeq.postln;
-			~clapSeq.postln;
-			~kickAmp.postln;
-			~snareAmp.postln;
-			~hihatAmp.postln;
-			~clapAmp.postln;
 		});
 	});
 }, "/seqLenght");
@@ -917,14 +797,14 @@ OSCdef(\DrumLength, {
 
 OSCdef(\snap, {
 	arg msg;
-	msg.postln;
+	msg[1].postln; //DEBUG
 	switch(msg[1],
 		0, {
 			switch(msg[2],
 				0, {
 					Pdefn(\inst3, \bass);
 					Pdef(\low).play;
-					('0L').postln;
+					('0L').postln;//DEBUG
 				},
 				1, {
 					Pdefn(\inst3, \violin);
@@ -972,7 +852,7 @@ OSCdef(\snap, {
 				},
 				3, {
 					Pdefn(\inst2, \bup);
-					Pdef(\medium).play;
+					Pdef(v).play;
 					('3M').postln;
 				},
 				4, {
@@ -1046,6 +926,35 @@ OSCdef(\removed, {
 	);
 
 }, "/removed");
+
+
+OSCdef(\kickVol, {
+	arg msg;
+	~kickAmp.put(msg[1], (msg[2] * ~drumVol *2));
+	Pdefn(\kickVolume, Pseq(~kickAmp, inf));
+	("kick cambiato").postln;
+}, "/kick");
+
+OSCdef(\snareVol, {
+	arg msg;
+	~snareAmp.put(msg[1], (msg[2] * ~drumVol);
+	Pdefn(\snareVolume, Pseq(~snareAmp, inf));
+	("snare cambiato").postln;
+}, "/snare");
+
+OSCdef(\hihatVol, {
+	arg msg;
+	~hihatAmp.put(msg[1], (msg[2] * ~drumVol));
+	Pdefn(\hihatVolume, Pseq(~hihatAmp, inf));
+	("hihat cambiato").postln;
+}, "/hihat");
+
+OSCdef(\clapVol, {
+	arg msg;
+	~clapAmp.put(msg[1], (msg[2] * ~drumVol));
+	Pdefn(\clapVolume, Pseq(~clapAmp, inf));
+	("clap cambiato").postln;
+}, "/clap");
 
 )
 
