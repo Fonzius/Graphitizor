@@ -335,7 +335,7 @@ Pdef(\drumClap, Pbind(\tempo, Pdefn(\arpBeat), \instrument, \clap, \dur, Pdefn(\
 						},
 						145, {
 							/// TEMPO ///
-							~beat = ~val2/11;
+							~beat = ~val2/9;
 							Pdefn(\arpBeat, ~beat);
 							~processing.sendMsg("/beat", ~beat);
 						},
