@@ -297,6 +297,10 @@ class SelectionPad extends Pad{
   void setIntensity(int intensity){
     this.intensity = intensity;
   }
+  
+  void setThunderDuration(int duration){
+   this.thunderDuration = duration; 
+  }
 }
 
 class FiveVPad extends Pad{

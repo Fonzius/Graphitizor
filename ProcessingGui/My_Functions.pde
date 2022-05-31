@@ -166,3 +166,9 @@ void assignment(){
   textFont(font);
   text("Sequencer View ->", width-330, height-40);
 }
+
+void updateThunderDuration(float durationRaw){
+ int duration = (int)(20/log(1+durationRaw));
+ for(int i = 0; i<numSelectionPad; i++)
+   selectionPad[i].setThunderDuration(duration);
+}
