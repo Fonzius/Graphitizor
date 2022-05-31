@@ -101,14 +101,14 @@ SynthDef(\bass, { arg freq = 440, amp = 0.5, gate = 1;
 }).add;
 
 
-SynthDef(\pluck, {arg out=0, freq=440, filter=3, amp=1,coef=0.5,dur=2,legato=1,mix=0,pan=0, gate = 1, mixrev=0, room = 0.8;
+SynthDef(\pluck, {arg output=0, freq=440, filter=3, amp=1,coef=0.5,dur=2,legato=1,mix=0,pan=0, gate = 1, mixrev=0, room = 0.8;
 	var pluck,moog,noteOff,out;
 	pluck =	Pluck.ar(PinkNoise.ar,1,0.2,freq.reciprocal,dur*legato,coef);
 	moog = MoogFF.ar(pluck, (freq*filter),2);
 	out = SelectX.ar(mix,[LPF.ar(pluck,2500),moog]);
 	out = FreeVerb.ar(out, mixrev, room);
 	out = out * EnvGen.ar(Env.asr(0, 1, 0.1), gate, doneAction: 2);
-	Out.ar(out, Pan2.ar(out * amp,pan));
+	Out.ar(output, Pan2.ar(out * amp,pan));
 }).add;
 
 
@@ -337,6 +337,7 @@ Pdef(\drumClap, Pbind(\tempo, Pdefn(\arpBeat), \instrument, \clap, \dur, Pdefn(\
 							/// TEMPO ///
 							~beat = ~val2/11;
 							Pdefn(\arpBeat, ~beat);
+							~processing.sendMsg("/beat", ~beat);
 						},
 						146, {
 							/// DRUM VOLUME ///
