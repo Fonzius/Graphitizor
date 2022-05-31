@@ -169,7 +169,6 @@ void keyPressed(){
     osc.send(msg, supercollider);
     
     firstSequencerSetup();
-
   }
 }
 
@@ -185,5 +184,8 @@ void oscEvent(OscMessage msg){
   }
   if(msg.checkAddrPattern("/beat")){
     updateThunderDuration(msg.get(0).floatValue());
+  }
+  if(msg.checkAddrPattern("/pitch")){
+   thunderColorVariation = (map(msg.get(0).intValue(),0, 255, -240, 120));
   }
 }

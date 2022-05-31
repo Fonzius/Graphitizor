@@ -256,8 +256,9 @@ class SelectionPad extends Pad{
     }
   }
   void thunder(){
+    colorMode(HSB,360,100,100);
     
-    hThunder.setStrokeColour(color(0,0,255,this.intensity));
+    hThunder.setStrokeColour(color(240+thunderColorVariation, 100 ,100, this.intensity));
   
     int tLenght = thunderDuration/2; 
     
@@ -292,6 +293,8 @@ class SelectionPad extends Pad{
      
    else
      this.thunderTime = 0;
+     
+   colorMode(RGB,255,255,255);
   } 
   
   void setIntensity(int intensity){

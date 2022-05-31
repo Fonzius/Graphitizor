@@ -45,3 +45,5 @@ String[] instrumentPadName = {"Saw \n Bass","Violin","Rhodes","Pad","Pluck","Sin
 color[] instrumentColor = {color(33,226,255), color(33,226,255), color(255,150,11), color(255,150,11), color(249,183,255),color(249,183,255)};
 color[] selectionColor = {color(33,226,255), color(255,150,11), color(249,183,255)};
 color[] drumsColor ={color(223,3,247), color(47,228,255), color(255,255,47), color(215,100,0)};
+
+float thunderColorVariation = 0.00;
