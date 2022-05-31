@@ -124,6 +124,11 @@ void sequencer(){
   text("Clap", colorPad[3].getX(), colorPad[3].getY()+2*circleSize/3);
   
   text("<- Assignment View", 330, height-40);
+  
+  textFont(fontina);
+  text("e -> Eraser \n R -> Reset Canvas", width-200, height-160);
+  text("1-5 -> Change Brush Size", 270, height-170);
+
 }
 
 void saveSequencerScreen(){

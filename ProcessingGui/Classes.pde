@@ -135,6 +135,9 @@ class InstrumentPad extends Pad{
   int r;
   int id;
   
+  int stdX;
+  int stdY;
+  
   InstrumentPad(int x, int y, color c, int id){
     this.x = x;
     this.y = y;
@@ -142,6 +145,9 @@ class InstrumentPad extends Pad{
     this.c = c;
     seed = (int)random(0,69420);
     this.id = id;
+    
+    this.stdX = this.x;
+    this.stdY = this.y;
   }
   
   void show(){
@@ -183,6 +189,12 @@ class InstrumentPad extends Pad{
         break;
       }
     }
+  }
+  
+  void reset(){
+    this.x = stdX;
+    this.y = stdY;
+    this.isMoved();
   }
 }
 

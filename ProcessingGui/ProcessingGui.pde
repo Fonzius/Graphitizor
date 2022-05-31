@@ -75,13 +75,16 @@ void mousePressed(MouseEvent e){
      
      for(int j = 0; j<numInstrumentPad; j++){
        if(instrumentPad[j].isIn(xm,ym)){
-        
-         temp = dist(xm, ym, instrumentPad[j].getX(), instrumentPad[j].getY());
-        
-         if( temp < distance){
-           distance = temp;
-           currentlyMoving = j;
-        }
+         if(e.getCount()==1){
+           temp = dist(xm, ym, instrumentPad[j].getX(), instrumentPad[j].getY());
+          
+           if( temp < distance){
+             distance = temp;
+             currentlyMoving = j;
+           }
+         }
+         else
+           instrumentPad[j].reset();
       }
     }
     if(currentlyMoving!=-1){
