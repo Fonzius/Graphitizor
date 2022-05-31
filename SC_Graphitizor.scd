@@ -179,7 +179,7 @@ SynthDef(\violin, {
 }).add;
 
 
-SynthDef(\sine, { arg freq = 440, amp = 0.1, att = 0.1, rel = 0.7, lofreq = 1000, hifreq = 3000;
+SynthDef(\sine, { arg freq = 440, amp = 0.1, att = 0.1, rel = 0.2, lofreq = 1000, hifreq = 3000;
     var env, snd;
     env = Env.perc(
 		attackTime: att,
@@ -369,6 +369,7 @@ Pdef(\drumClap, Pbind(\tempo, Pdefn(\arpBeat), \instrument, \clap, \dur, Pdefn(\
 							Pdefn(\highPitch, ~pitchHigh);
 							Pdefn(\mediumPitch, ~pitchMedium);
 							Pdefn(\lowPitch, ~pitchLow);
+							~processing.sendMsg("/pitch", ~val2);
 						}
 					);
 				},{
@@ -396,6 +397,7 @@ Pdef(\drumClap, Pbind(\tempo, Pdefn(\arpBeat), \instrument, \clap, \dur, Pdefn(\
 							129, {
 								~beat = 1;
 								Pdefn(\arpBeat, ~beat);
+								~processing.sendMsg("/beat", ~beat);
 							},
 							130, {
 								~drumVol = 0;
@@ -422,6 +424,7 @@ Pdef(\drumClap, Pbind(\tempo, Pdefn(\arpBeat), \instrument, \clap, \dur, Pdefn(\
 								Pdefn(\highPitch, ~pitchHigh);
 								Pdefn(\mediumPitch, ~pitchMedium);
 								Pdefn(\lowPitch, ~pitchLow);
+								~processing.sendMsg("/pitch", ~val2);
 							}
 						);
 					});
