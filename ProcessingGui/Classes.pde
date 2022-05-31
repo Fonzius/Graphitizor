@@ -29,16 +29,18 @@ class Pad{
 
 class ColorPad extends Pad{ 
  int r;
+ int seed;
  
- ColorPad(int x,int y){
+ ColorPad(int x,int y, color c){
    this.x = x;
    this.y = y;
-   this.c = color(random(0,255),random(0,255),random(0,255));
+   this.c = c;
    this.r = circleSize;
+   this.seed = (int)random(0,69420);
  }
  
  void show(){
-   hColorPad.setSeed(69420);
+   hColorPad.setSeed(this.seed);
    hColorPad.setFillColour(this.c);
    hColorPad.ellipse(x,y,r,r);
   }
@@ -61,24 +63,24 @@ class PaintablePad extends Pad{
   String[] instruments = {"/kick", "/snare", "/hihat", "/clap"};
   
   PaintablePad(int x, int y, int padWidth, int padHeight, int step){
-   this.x = x;
-   this.y = y;
-   this.padHeight = padHeight;
-   this.padWidth = padWidth;
+    this.x = x;
+    this.y = y;
+    this.padHeight = padHeight;
+    this.padWidth = padWidth;
    
-   this.numTotalPixels = padHeight*padWidth;
+    this.numTotalPixels = padHeight*padWidth;
    
-   this.seed = (int)random(69, 69420);
+    this.seed = (int)random(69, 69420);
    
-   this.step = step;
+    this.step = step;
    
-   this.colorAmount = new int[numColors];
-   for(int i = 0; i<numColors; i++)
-     this.colorAmount[i] = 0;
+    this.colorAmount = new int[numColors];
+    for(int i = 0; i<numColors; i++)
+      this.colorAmount[i] = 0;
      
-   this.instrumentsColor = new color[numColors];
-   for(int i = 0; i<numColors; i++)
-     this.instrumentsColor[i] = colorPad[i].getC();
+    this.instrumentsColor = new color[numColors];
+    for(int i = 0; i<numColors; i++)
+      this.instrumentsColor[i] = colorPad[i].getC();
   }
   
   void show(boolean background){
@@ -131,28 +133,33 @@ class InstrumentPad extends Pad{
   int seed;
   int snappedTo = -1;
   int r;
+  int id;
   
-  InstrumentPad(){
-    this.x = width - circleSize;
-    this.y = 200; 
-    seed = (int)random(0,69420);
-  }
-  InstrumentPad(int x, int y){
+  int stdX;
+  int stdY;
+  
+  InstrumentPad(int x, int y, color c, int id){
     this.x = x;
     this.y = y;
     this.r = circleSize;
+    this.c = c;
     seed = (int)random(0,69420);
+    this.id = id;
+    
+    this.stdX = this.x;
+    this.stdY = this.y;
   }
   
   void show(){
+    hInstrumentPad.setFillColour(this.c);
     hInstrumentPad.setSeed(this.seed);
     hInstrumentPad.ellipse(x,y,r,r);
   }
   
   void isMoved(){
     if(snappedTo!=-1){
-      OscMessage msg = new OscMessage("/snapped");
-      msg.add(-snappedTo);
+      OscMessage msg = new OscMessage("/removed");
+      msg.add(snappedTo);
       osc.send(msg, supercollider);
       
       selectionPad[snappedTo].empty();
@@ -177,10 +184,17 @@ class InstrumentPad extends Pad{
         
         OscMessage msg = new OscMessage("/snapped");
         msg.add(snappedTo);
+        msg.add(id);
         osc.send(msg, supercollider);
         break;
       }
     }
+  }
+  
+  void reset(){
+    this.x = stdX;
+    this.y = stdY;
+    this.isMoved();
   }
 }
 
@@ -193,19 +207,23 @@ class SelectionPad extends Pad{
   float thunderDistance;
   int thunderTime = 0;
   int thunderDuration = 20;
+  
+  int intensity = 100;
 
   
-  SelectionPad(int x, int y){
-   this.x = x;
-   this.y = y;
-   this.r = circleSize;
-   this.thunderDistance = dist(x,y,fiveVPad.getX(),fiveVPad.getY());
-   this.setAngle();
-   this.seed = (int)random(0,69420);
+  SelectionPad(int x, int y, color c){
+    this.x = x;
+    this.y = y;
+    this.r = circleSize+10;
+    this.c = c;
+    this.thunderDistance = dist(x,y,fiveVPad.getX(),fiveVPad.getY());
+    this.setAngle();
+    this.seed = (int)random(0,69420);  
   }
   
   void show(){
     noFill();
+    hSelectionPad.setStrokeColour(this.c);
     hSelectionPad.setSeed(this.seed);
     hSelectionPad.ellipse(x,y,r,r);
   }
@@ -238,6 +256,8 @@ class SelectionPad extends Pad{
     }
   }
   void thunder(){
+    
+    hThunder.setStrokeColour(color(0,0,255,this.intensity));
   
     int tLenght = thunderDuration/2; 
     
@@ -273,6 +293,14 @@ class SelectionPad extends Pad{
    else
      this.thunderTime = 0;
   } 
+  
+  void setIntensity(int intensity){
+    this.intensity = intensity;
+  }
+  
+  void setThunderDuration(int duration){
+   this.thunderDuration = duration; 
+  }
 }
 
 class FiveVPad extends Pad{
