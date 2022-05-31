@@ -7,14 +7,7 @@ NetAddr.localAddr
 (
 
 //////////////////////////////////////// SYNTHDEFS Block /////////////////////////////////////////
-// SynthDef(\silence, {
-// 	|gate = 1|
-// 	var env, snd;
-// 	env = Env.adsr(0.5, 3, 1, 0.2).kr(doneAction:2, gate: gate);
-// 	snd = 0 * env;
-// 	Out.ar([0,1], snd);
-// }).add;
-//
+
 
 SynthDef(\kick, {
     |out = 0, pan = 0, amp = 2|
@@ -27,11 +20,11 @@ SynthDef(\kick, {
     bodyFreq = EnvGen.ar(Env([261, 120, 51], [0.035, 0.08]));
     bodyAmp = EnvGen.ar(Env.linen(0.005, 0.1, 0.3), doneAction: 2);
     body = SinOsc.ar(bodyFreq) * bodyAmp;
-    popFreq = XLine.kr(750, 261, 0.02);
+    popFreq = XLine.kr(750, 261, 0.01);
     popAmp = EnvGen.ar(Env.linen(0.001, 0.02, 0.001)) * 0.15;
     pop = SinOsc.ar(popFreq) * popAmp;
-	clickAmp = EnvGen.ar(Env.perc(0.001, 0.01)) * 0.15;
-    click = LPF.ar(Formant.ar(910, 4760, 2110), 3140) * clickAmp;
+	clickAmp = EnvGen.ar(Env.perc(0.001, 0.001)) * 0.15;
+	click = LPF.ar(Formant.ar(910, 4760, 2110), 6000) * clickAmp;
     snd = body + pop + click;
     snd = snd.tanh;
     Out.ar(out, Pan2.ar(snd, pan, amp));
@@ -62,19 +55,6 @@ SynthDef(\hihat, {arg out = 0, amp = 0.5, att = 0.01, rel = 0.2, ffreq = 6000, p
 	snd = HPF.ar(in: snd, freq: ffreq, mul: env);
 	Out.ar(out, Pan2.ar(snd, pan));
 }).add;
-
-// SynthDef(\hihat, {
-// 	|out = 0, pan = 0, amp = 0.9|
-// 	var click, clickAmp;
-// 	var noise, noiseAmp;
-// 	var snd;
-//
-//
-// 	noiseAmp = EnvGen.ar(Env.perc(0.001, 0.3, curve: -8), doneAction: 2);
-// 	noise = Mix(BPF.ar(ClipNoise.ar, [4010, 4151], [0.15, 0.56], [1.0, 0.6])) * 0.7 * noiseAmp;
-// 	snd = noise;
-// 	Out.ar(out, Pan2.ar(snd, pan, amp));
-// }).add;
 
 
 SynthDef(\clap, {
@@ -379,7 +359,7 @@ Pdef(\drumClap, Pbind(\tempo, Pdefn(\arpBeat), \instrument, \clap, \dur, Pdefn(\
 							Pdefn(\arpVolumeLow, ~volumeLow);
 							~processing.sendMsg("/volumeLow", ~val2);
 						},
-						148, {
+						150, {
 							/// PITCH ///
 							~pitchHigh = 12 + ((~val2/23.18).round);
 							~pitchMedium = 0 + ((~val2/23.18).round);
@@ -433,7 +413,7 @@ Pdef(\drumClap, Pbind(\tempo, Pdefn(\arpBeat), \instrument, \clap, \dur, Pdefn(\
 								Pdefn(\arpVolumeLow, ~volumeLow);
 								~processing.sendMsg("/volumeLow", ~val2);
 							},
-							132, {
+							134, {
 								~pitchHigh = 12;
 								~pitchMedium = 0;
 								~pitchLow = -24;
@@ -563,7 +543,7 @@ OSCdef(\snap, {
 				},
 				3, {
 					Pdefn(\inst2, \bup);
-					Pdef(v).play;
+					Pdef(\medium).play;
 					('3M').postln;
 				},
 				4, {
@@ -648,7 +628,7 @@ OSCdef(\kickVol, {
 
 OSCdef(\snareVol, {
 	arg msg;
-	~snareAmp.put(msg[1], (msg[2] * ~drumVol);
+	~snareAmp.put(msg[1], (msg[2] * ~drumVol));
 	Pdefn(\snareVolume, Pseq(~snareAmp, inf));
 	("snare cambiato").postln;
 }, "/snare");
@@ -689,7 +669,7 @@ Pdefn(\arpVolumeHigh, ~volumeHigh);
 Pdefn(\arpVolumeMedium, ~volumeMedium);
 Pdefn(\arpVolumeLow, ~volumeLow);
 
-
+~drumVol = 1;
 ~kickAmp  = [0, 1, 0, 1, 0, 1, 0, 0];
 ~snareAmp = [0, 0, 1, 0, 0, 0, 1, 0];
 ~hihatAmp = [0, 1, 0, 1, 0, 0, 1, 1];
@@ -852,7 +832,7 @@ OSCdef(\snap, {
 				},
 				3, {
 					Pdefn(\inst2, \bup);
-					Pdef(v).play;
+					Pdef(\medium).play;
 					('3M').postln;
 				},
 				4, {
@@ -937,7 +917,7 @@ OSCdef(\kickVol, {
 
 OSCdef(\snareVol, {
 	arg msg;
-	~snareAmp.put(msg[1], (msg[2] * ~drumVol);
+	~snareAmp.put(msg[1], (msg[2] * ~drumVol));
 	Pdefn(\snareVolume, Pseq(~snareAmp, inf));
 	("snare cambiato").postln;
 }, "/snare");
